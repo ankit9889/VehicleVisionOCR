@@ -134,10 +134,10 @@ namespace VehicleVisionOCR.Backend.BackgroundServices
                     // We sort by length descending to match longest color name first
                     foreach (var dbColor in dbColors.Where(c => !string.IsNullOrEmpty(c)).OrderByDescending(c => c.Length))
                     {
-                        if (rawTextUpper.Contains(dbColor.ToUpperInvariant()))
+                        if (VehicleVisionOCR.Backend.Helpers.FuzzyMatcher.IsFuzzyMatch(rawTextUpper, dbColor.ToUpperInvariant()))
                         {
                             vehicle.Color = dbColor;
-                            _logger.LogInformation($"Dynamic Color Matched from DB: {dbColor}");
+                            _logger.LogInformation($"Dynamic Color Matched from DB (Fuzzy): {dbColor}");
                             break;
                         }
                     }

@@ -43,7 +43,7 @@ namespace VehicleVisionOCR.Backend.Controllers
                     rawTextUpper = System.Text.RegularExpressions.Regex.Replace(rawTextUpper, @"\s+", " ");
                     foreach (var dbColor in System.Linq.Enumerable.OrderByDescending(dbColors.Where(c => !string.IsNullOrEmpty(c)), c => c.Length))
                     {
-                        if (rawTextUpper.Contains(dbColor.ToUpperInvariant()))
+                        if (VehicleVisionOCR.Backend.Helpers.FuzzyMatcher.IsFuzzyMatch(rawTextUpper, dbColor.ToUpperInvariant()))
                         {
                             var colorField = result.Result.ExtractedFields.Find(f => f.Key.Equals("Color", StringComparison.OrdinalIgnoreCase));
                             if (colorField != null)

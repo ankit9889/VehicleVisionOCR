@@ -459,18 +459,6 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     }
                 }
             }
-
-            // 4. Global Squish Pass (recovers VINs that were split across multiple lines/words due to artifacts)
-            var globalSquish = Regex.Replace(rawText.ToUpperInvariant(), @"[^A-Z0-9]+", "");
-            globalSquish = ApplyOcrCorrections(globalSquish);
-            foreach (Match match in exactVinRegex.Matches(globalSquish))
-            {
-                string val = match.Groups[1].Value;
-                if (val.Length == 17)
-                {
-                    allCandidates.Add(new VinCandidate { Text = val, OriginalText = val, Source = "GlobalSquish", PassName = passName });
-                }
-            }
         }
 
         private VinCandidate ScoreAndSelectBestCandidate(List<VinCandidate> candidates, string decodedBarcode)

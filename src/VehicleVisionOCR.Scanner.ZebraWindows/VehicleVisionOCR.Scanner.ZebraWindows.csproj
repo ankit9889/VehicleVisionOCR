@@ -19,7 +19,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <ItemGroup Condition="Exists('C:\Program Files\Zebra Technologies\Barcode Scanners\Common\CoreScanner.dll')">
+  <ItemGroup>
     <COMReference Include="CoreScanner">
       <WrapperTool>tlbimp</WrapperTool>
       <VersionMinor>0</VersionMinor>
@@ -28,6 +28,7 @@
       <Lcid>0</Lcid>
       <Isolated>false</Isolated>
       <EmbedInteropTypes>False</EmbedInteropTypes>
+      <Private>True</Private>
     </COMReference>
   </ItemGroup>
 

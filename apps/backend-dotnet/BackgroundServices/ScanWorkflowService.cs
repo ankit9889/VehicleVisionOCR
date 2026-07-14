@@ -130,8 +130,9 @@ namespace VehicleVisionOCR.Backend.BackgroundServices
                 if (response.Result.RawText != null)
                 {
                     var rawTextUpper = response.Result.RawText.ToUpperInvariant().Replace("\n", " ").Replace("\r", " ");
+                    rawTextUpper = System.Text.RegularExpressions.Regex.Replace(rawTextUpper, @"\s+", " ");
                     // We sort by length descending to match longest color name first
-                    foreach (var dbColor in dbColors.OrderByDescending(c => c.Length))
+                    foreach (var dbColor in dbColors.Where(c => !string.IsNullOrEmpty(c)).OrderByDescending(c => c.Length))
                     {
                         if (rawTextUpper.Contains(dbColor.ToUpperInvariant()))
                         {

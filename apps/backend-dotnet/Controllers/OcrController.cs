@@ -40,11 +40,12 @@ namespace VehicleVisionOCR.Backend.Controllers
                     var dbColors = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(System.Linq.Queryable.Select(dbContext.VehicleColors, c => c.Name));
                     
                     var rawTextUpper = result.Result.RawText.ToUpperInvariant().Replace("\n", " ").Replace("\r", " ");
-                    foreach (var dbColor in System.Linq.Enumerable.OrderByDescending(dbColors, c => c.Length))
+                    rawTextUpper = System.Text.RegularExpressions.Regex.Replace(rawTextUpper, @"\s+", " ");
+                    foreach (var dbColor in System.Linq.Enumerable.OrderByDescending(dbColors.Where(c => !string.IsNullOrEmpty(c)), c => c.Length))
                     {
                         if (rawTextUpper.Contains(dbColor.ToUpperInvariant()))
                         {
-                            var colorField = result.Result.ExtractedFields.Find(f => f.Key == "Color");
+                            var colorField = result.Result.ExtractedFields.Find(f => f.Key.Equals("Color", StringComparison.OrdinalIgnoreCase));
                             if (colorField != null)
                             {
                                 colorField.Value = dbColor;

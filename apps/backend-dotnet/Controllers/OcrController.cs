@@ -32,6 +32,32 @@ namespace VehicleVisionOCR.Backend.Controllers
                 var ocrRequest = new VehicleVisionOCR.OCR.Core.Models.OcrRequest { ImageData = imageBytes };
                 var result = await _ocrManager.ProcessAsync(ocrRequest, VehicleVisionOCR.OCR.Core.Enums.OcrEngineType.Tesseract);
                 
+                // Attempt dynamic color matching from Database for UI testing
+                if (result.Status == VehicleVisionOCR.OCR.Core.Enums.OcrStatus.Success && result.Result != null && !string.IsNullOrEmpty(result.Result.RawText))
+                {
+                    using var scope = HttpContext.RequestServices.CreateScope();
+                    var dbContext = scope.ServiceProvider.GetRequiredService<VehicleVisionOCR.Infrastructure.Persistence.ApplicationDbContext>();
+                    var dbColors = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(System.Linq.Queryable.Select(dbContext.VehicleColors, c => c.Name));
+                    
+                    var rawTextUpper = result.Result.RawText.ToUpperInvariant().Replace("\n", " ").Replace("\r", " ");
+                    foreach (var dbColor in System.Linq.Enumerable.OrderByDescending(dbColors, c => c.Length))
+                    {
+                        if (rawTextUpper.Contains(dbColor.ToUpperInvariant()))
+                        {
+                            var colorField = result.Result.ExtractedFields.Find(f => f.Key == "Color");
+                            if (colorField != null)
+                            {
+                                colorField.Value = dbColor;
+                            }
+                            else
+                            {
+                                result.Result.ExtractedFields.Add(new VehicleVisionOCR.OCR.Core.Models.OcrField { Key = "Color", Value = dbColor });
+                            }
+                            break;
+                        }
+                    }
+                }
+
                 return Ok(result);
             }
             catch (Exception ex)

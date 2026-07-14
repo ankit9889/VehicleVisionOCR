@@ -343,7 +343,18 @@ namespace VehicleVisionOCR.OCR.Tesseract
             Cv2.AdaptiveThreshold(gray, adaptiveMat2, 255, AdaptiveThresholdTypes.GaussianC, ThresholdTypes.Binary, 81, 2);
             dict.Add("AdaptiveLarge", adaptiveMat2);
             
-            // Removed Sharpened and Upscaled passes for performance
+            // 6. Blurred Pass (Helps when text is too close to the barcode lines)
+            var blurredMat = new Mat();
+            Cv2.GaussianBlur(gray, blurredMat, new OpenCvSharp.Size(5, 5), 0);
+            var otsuBlurredMat = new Mat();
+            Cv2.Threshold(blurredMat, otsuBlurredMat, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
+            dict.Add("BlurredOtsu", otsuBlurredMat);
+
+            // 7. Barcode Removal Pass (Erase vertical lines using horizontal morphology)
+            var barcodeRemovalMat = new Mat();
+            var kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(7, 1));
+            Cv2.MorphologyEx(binaryMat, barcodeRemovalMat, MorphTypes.Open, kernel);
+            dict.Add("BarcodeRemoval", barcodeRemovalMat);
             
             return dict;
         }
@@ -390,6 +401,16 @@ namespace VehicleVisionOCR.OCR.Tesseract
             {
                 var cleanLine = Regex.Replace(line, @"[^A-Z0-9 ]+", "").ToUpperInvariant(); // Keep spaces to separate words
                 
+                // 1a. Test line with spaces removed (in case Tesseract inserted false spaces into a perfect VIN)
+                var spacelessLine = cleanLine.Replace(" ", "");
+                foreach (Match match in barcodeRegex.Matches(spacelessLine))
+                {
+                    string val = match.Value;
+                    val = ApplyOcrCorrections(val);
+                    allCandidates.Add(new VinCandidate { Text = val, OriginalText = line, Source = "SpacelessLine", PassName = passName });
+                }
+
+                // 1b. Test line with spaces (standard)
                 foreach (Match match in barcodeRegex.Matches(cleanLine))
                 {
                     string val = match.Value.Replace(" ", "");

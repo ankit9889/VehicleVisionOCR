@@ -562,6 +562,14 @@ namespace VehicleVisionOCR.OCR.Tesseract
             if (colorMatch.Success)
             {
                 var extractedColor = colorMatch.Value.ToUpperInvariant().Trim();
+                
+                // Strip common paint codes like NHB05, NHBOS, PB396 from the beginning
+                // Paint codes usually have a mix of letters and numbers, but OCR can turn numbers to letters (e.g. 0->O, 5->S)
+                // We strip the first word if it matches these patterns
+                extractedColor = Regex.Replace(extractedColor, @"^(?:NHB[O0-9S]{2}|PB[0-9S]{3}|[A-Z]{2,3}\d+[A-Z]?)\s+", "");
+                // General fallback: if the first word is 4-6 chars, not a standard color word, and starts with N, P, Y, R, B etc.
+                extractedColor = Regex.Replace(extractedColor, @"^(?:NH[A-Z0-9]{3}|PB[A-Z0-9]{3}|YR[A-Z0-9]{3})\s+", "");
+
                 extractedColor = Regex.Replace(extractedColor, @"^[A-Z]?\s*EARL", "PEARL");
                 extractedColor = Regex.Replace(extractedColor, @"O[YV]\s*I[YV]", "PEARL IGNEOUS");
                 

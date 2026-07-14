@@ -162,19 +162,6 @@ namespace VehicleVisionOCR.OCR.Tesseract
                         
                         mat.Dispose();
                         
-                        // Early Exit Strategy: If ZXing already decoded the barcode perfectly, we just needed the first pass (OriginalGray) to get the Color and Model text! 
-                        if (!string.IsNullOrEmpty(decodedBarcode) && passName == "OriginalGray")
-                        {
-                            break;
-                        }
-
-                        // Early Exit Strategy 2: If Tesseract found a PERFECT 17-char VIN, don't run more passes!
-                        var tempBest = ScoreAndSelectBestCandidate(allCandidates, string.Empty);
-                        if (tempBest != null && tempBest.Score >= 100)
-                        {
-                            _logger.LogInformation($"Early Exit triggered: Perfect VIN {tempBest.Text} found in pass {passName}");
-                            break;
-                        }
                     } // close foreach
                     } // close lock
 

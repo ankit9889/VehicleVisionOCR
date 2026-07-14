@@ -1,0 +1,274 @@
+Using launch settings from apps\backend-dotnet\Properties\launchSettings.json...
+Building...
+C:\Users\ASUS\.gemini\antigravity\scratch\VehicleVisionOCR\src\VehicleVisionOCR.OCR.Tesseract\VehicleVisionOCR.OCR.Tesseract.csproj : warning NU1904: Package 'System.Drawing.Common' 4.5.0 has a known critical severity vulnerability, https://github.com/advisories/GHSA-rxg9-xrhp-64gj [C:\Users\ASUS\.gemini\antigravity\scratch\VehicleVisionOCR\apps\backend-dotnet\VehicleVisionOCR.Backend.csproj]
+C:\Users\ASUS\.gemini\antigravity\scratch\VehicleVisionOCR\apps\backend-dotnet\VehicleVisionOCR.Backend.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+C:\Users\ASUS\.gemini\antigravity\scratch\VehicleVisionOCR\src\VehicleVisionOCR.Infrastructure\VehicleVisionOCR.Infrastructure.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q [C:\Users\ASUS\.gemini\antigravity\scratch\VehicleVisionOCR\apps\backend-dotnet\VehicleVisionOCR.Backend.csproj]
+C:\Users\ASUS\.gemini\antigravity\scratch\VehicleVisionOCR\apps\backend-dotnet\VehicleVisionOCR.Backend.csproj : warning NU1904: Package 'System.Drawing.Common' 4.5.0 has a known critical severity vulnerability, https://github.com/advisories/GHSA-rxg9-xrhp-64gj
+C:\Users\ASUS\.gemini\antigravity\scratch\VehicleVisionOCR\apps\backend-dotnet\VehicleVisionOCR.Backend.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+C:\Users\ASUS\.gemini\antigravity\scratch\VehicleVisionOCR\apps\backend-dotnet\VehicleVisionOCR.Backend.csproj : warning NU1904: Package 'System.Drawing.Common' 4.5.0 has a known critical severity vulnerability, https://github.com/advisories/GHSA-rxg9-xrhp-64gj
+C:\Users\ASUS\.gemini\antigravity\scratch\VehicleVisionOCR\src\VehicleVisionOCR.OCR.Tesseract\VehicleVisionOCR.OCR.Tesseract.csproj : warning NU1904: Package 'System.Drawing.Common' 4.5.0 has a known critical severity vulnerability, https://github.com/advisories/GHSA-rxg9-xrhp-64gj
+C:\Users\ASUS\.gemini\antigravity\scratch\VehicleVisionOCR\src\VehicleVisionOCR.Infrastructure\VehicleVisionOCR.Infrastructure.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+[14:03:30 INF] Starting VehicleVisionOCR Backend...
+[14:03:31 INF] Executed DbCommand (8ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT COUNT(*) FROM "sqlite_master" WHERE "type" = 'table' AND "rootpage" IS NOT NULL;
+[14:03:31 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+PRAGMA journal_mode=WAL;
+[14:03:31 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+PRAGMA synchronous=NORMAL;
+[14:03:31 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+PRAGMA foreign_keys=ON;
+[14:03:31 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+
+            CREATE TABLE IF NOT EXISTS "VehicleColors" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_VehicleColors" PRIMARY KEY,
+                "Name" TEXT NOT NULL,
+                "CreatedAt" TEXT NOT NULL
+            );
+[14:03:31 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "VehicleColors" AS "v")
+[14:03:31 INF] User profile is available. Using 'C:\Users\ASUS\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+[14:03:31 INF] SyncBackgroundService is starting.
+[14:03:31 INF] System Maintenance Service is starting.
+[14:03:31 INF] Scan Workflow Service is starting.
+[14:03:31 INF] Initializing Scanner Manager...
+[14:03:31 WRN] Overriding address(es) 'http://0.0.0.0:5256'. Binding to endpoints defined via IConfiguration and/or UseKestrel() instead.
+[14:03:31 INF] Now listening on: http://[::]:5256
+[14:03:31 INF] Application started. Press Ctrl+C to shut down.
+[14:03:31 INF] Hosting environment: Development
+[14:03:31 INF] Content root path: C:\Users\ASUS\.gemini\antigravity\scratch\VehicleVisionOCR\apps\backend-dotnet\bin\Debug\net10.0
+[14:03:58 INF] Request starting HTTP/1.1 OPTIONS http://localhost:5256/hubs/scanner/negotiate?negotiateVersion=1 - null null
+[14:03:58 INF] CORS policy execution successful.
+[14:03:58 INF] Request finished HTTP/1.1 OPTIONS http://localhost:5256/hubs/scanner/negotiate?negotiateVersion=1 - 204 null null 37.356ms
+[14:03:58 INF] Request starting HTTP/1.1 POST http://localhost:5256/hubs/scanner/negotiate?negotiateVersion=1 - null 0
+[14:03:58 INF] CORS policy execution successful.
+[14:03:58 INF] Executing endpoint '/hubs/scanner/negotiate'
+[14:03:58 INF] Executed endpoint '/hubs/scanner/negotiate'
+[14:03:58 INF] Request finished HTTP/1.1 POST http://localhost:5256/hubs/scanner/negotiate?negotiateVersion=1 - 200 316 application/json 15.4965ms
+[14:03:58 INF] Request starting HTTP/1.1 GET http://localhost:5256/hubs/scanner?id=6r6JDVvaD1h3bNEOhSI6YA - null null
+[14:03:58 INF] CORS policy execution successful.
+[14:03:58 INF] Executing endpoint '/hubs/scanner'
+[14:04:15 INF] Request starting HTTP/1.1 OPTIONS http://localhost:5256/api/vehicles/history/bd99082b-c58b-4bd7-b3cf-70f2560f81b3 - null null
+[14:04:15 INF] CORS policy execution successful.
+[14:04:15 INF] Request finished HTTP/1.1 OPTIONS http://localhost:5256/api/vehicles/history/bd99082b-c58b-4bd7-b3cf-70f2560f81b3 - 204 null null 1.0071ms
+[14:04:15 INF] Request starting HTTP/1.1 DELETE http://localhost:5256/api/vehicles/history/bd99082b-c58b-4bd7-b3cf-70f2560f81b3 - null null
+[14:04:15 INF] CORS policy execution successful.
+[14:04:15 INF] Executing endpoint 'VehicleVisionOCR.Backend.Controllers.VehiclesController.DeleteHistoryItem (VehicleVisionOCR.Backend)'
+[14:04:15 INF] Route matched with {action = "DeleteHistoryItem", controller = "Vehicles"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] DeleteHistoryItem(System.Guid) on controller VehicleVisionOCR.Backend.Controllers.VehiclesController (VehicleVisionOCR.Backend).
+[14:04:15 INF] Executed DbCommand (4ms) [Parameters=[@p='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT "v"."Id", "v"."CreatedAt", "v"."CreatedBy", "v"."LastModifiedAt", "v"."LastModifiedBy", "v"."RawExtractedText", "v"."ScanTime", "v"."ScannerDeviceId", "v"."Status", "v"."VehicleId"
+FROM "VehicleScans" AS "v"
+WHERE "v"."Id" = @p
+LIMIT 1
+[14:04:15 INF] Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT "o"."Id", "o"."CreatedAt", "o"."CreatedBy", "o"."ExtractedValue", "o"."FieldName", "o"."IsManuallyCorrected", "o"."LastModifiedAt", "o"."LastModifiedBy", "o"."ProcessingTimeMs", "o"."Status", "o"."VehicleScanId", "o"."ConfidenceScore"
+FROM "OCRResults" AS "o"
+WHERE "o"."VehicleScanId" = @id
+[14:04:15 INF] Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT "s"."Id", "s"."ContentType", "s"."CreatedAt", "s"."CreatedBy", "s"."FileName", "s"."FileSizeBytes", "s"."IsSynced", "s"."LastModifiedAt", "s"."LastModifiedBy", "s"."LocalFilePath", "s"."RemoteUrl", "s"."VehicleScanId"
+FROM "ScanImages" AS "s"
+WHERE "s"."VehicleScanId" = @id
+[14:04:15 INF] Executed DbCommand (0ms) [Parameters=[@vehicleId='?' (DbType = Guid), @id='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "VehicleScans" AS "v"
+    WHERE "v"."VehicleId" = @vehicleId AND "v"."Id" <> @id)
+[14:04:15 INF] Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT "v"."Id", "v"."Color", "v"."CreatedAt", "v"."CreatedBy", "v"."LastModifiedAt", "v"."LastModifiedBy", "v"."Make", "v"."Model", "v"."SyncStatus", "v"."Type", "v"."Year", "v"."ChassisNumber", "v"."EngineNumber", "v"."RegistrationNumber", "v"."Vin"
+FROM "Vehicles" AS "v"
+WHERE "v"."Id" = @p
+LIMIT 1
+[14:04:15 INF] Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+DELETE FROM "ScanImages"
+WHERE "Id" = @p0
+RETURNING 1;
+[14:04:15 INF] Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+DELETE FROM "VehicleScans"
+WHERE "Id" = @p0
+RETURNING 1;
+[14:04:15 INF] Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+DELETE FROM "Vehicles"
+WHERE "Id" = @p0
+RETURNING 1;
+[14:04:15 INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType7`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+[14:04:15 INF] Executed action VehicleVisionOCR.Backend.Controllers.VehiclesController.DeleteHistoryItem (VehicleVisionOCR.Backend) in 436.9576ms
+[14:04:15 INF] Executed endpoint 'VehicleVisionOCR.Backend.Controllers.VehiclesController.DeleteHistoryItem (VehicleVisionOCR.Backend)'
+[14:04:15 INF] Request finished HTTP/1.1 DELETE http://localhost:5256/api/vehicles/history/bd99082b-c58b-4bd7-b3cf-70f2560f81b3 - 200 null application/json; charset=utf-8 462.0801ms
+[14:04:21 INF] Request starting HTTP/1.1 POST http://192.168.31.57:5256/api/mobilescanner/upload - multipart/form-data; boundary=----WebKitFormBoundaryP69sHmecvwMB4j8Q 68871
+[14:04:21 INF] CORS policy execution successful.
+[14:04:21 INF] Executing endpoint 'VehicleVisionOCR.Backend.Controllers.MobileScannerController.UploadImage (VehicleVisionOCR.Backend)'
+[14:04:21 INF] Route matched with {action = "UploadImage", controller = "MobileScanner"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] UploadImage(Microsoft.AspNetCore.Http.IFormFile) on controller VehicleVisionOCR.Backend.Controllers.MobileScannerController (VehicleVisionOCR.Backend).
+[14:04:21 ERR] Failed to initialize Zebra Scanner Provider.
+System.Runtime.InteropServices.COMException (0x80040154): Retrieving the COM class factory for component with CLSID {13B7E35E-506B-4DDE-B7C4-47ADFDBDE8AA} failed due to the following error: 80040154 Class not registered (0x80040154 (REGDB_E_CLASSNOTREG)).
+   at VehicleVisionOCR.Scanner.ZebraWindows.ZebraScannerProvider.EnsureInitialized() in C:\Users\ASUS\.gemini\antigravity\scratch\VehicleVisionOCR\src\VehicleVisionOCR.Scanner.ZebraWindows\ZebraScannerProvider.cs:line 37
+[14:04:21 ERR] Error discovering scanners using plugin Zebra CoreScanner SDK for Windows
+VehicleVisionOCR.Scanner.ZebraWindows.Exceptions.ZebraScannerException: CoreScanner initialization failed.
+ ---> System.Runtime.InteropServices.COMException (0x80040154): Retrieving the COM class factory for component with CLSID {13B7E35E-506B-4DDE-B7C4-47ADFDBDE8AA} failed due to the following error: 80040154 Class not registered (0x80040154 (REGDB_E_CLASSNOTREG)).
+   at VehicleVisionOCR.Scanner.ZebraWindows.ZebraScannerProvider.EnsureInitialized() in C:\Users\ASUS\.gemini\antigravity\scratch\VehicleVisionOCR\src\VehicleVisionOCR.Scanner.ZebraWindows\ZebraScannerProvider.cs:line 37
+   --- End of inner exception stack trace ---
+   at VehicleVisionOCR.Scanner.ZebraWindows.ZebraScannerProvider.EnsureInitialized() in C:\Users\ASUS\.gemini\antigravity\scratch\VehicleVisionOCR\src\VehicleVisionOCR.Scanner.ZebraWindows\ZebraScannerProvider.cs:line 70
+   at VehicleVisionOCR.Scanner.ZebraWindows.ZebraScannerProvider.DiscoverScannersAsync() in C:\Users\ASUS\.gemini\antigravity\scratch\VehicleVisionOCR\src\VehicleVisionOCR.Scanner.ZebraWindows\ZebraScannerProvider.cs:line 76
+   at VehicleVisionOCR.Scanner.Core.Manager.ScannerManager.DiscoverScannersAsync() in C:\Users\ASUS\.gemini\antigravity\scratch\VehicleVisionOCR\src\VehicleVisionOCR.Scanner.Core\Manager\ScannerManager.cs:line 94
+[14:04:21 INF] Created scanner instance for Generic using plugin Mobile Web Camera Scanner
+[14:04:21 INF] Successfully connected and registered scanner  of brand Generic
+[14:04:21 INF] Received mobile scan image of size 68656 bytes.
+[14:04:21 INF] Image captured from scanner MOB-WEB-001. Queuing for OCR.
+[14:04:21 INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType3`1[[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+[14:04:21 INF] Executed action VehicleVisionOCR.Backend.Controllers.MobileScannerController.UploadImage (VehicleVisionOCR.Backend) in 51.4542ms
+[14:04:21 INF] Executed endpoint 'VehicleVisionOCR.Backend.Controllers.MobileScannerController.UploadImage (VehicleVisionOCR.Backend)'
+[14:04:21 INF] Starting OCR processing on queued image.
+[14:04:21 INF] Request finished HTTP/1.1 POST http://192.168.31.57:5256/api/mobilescanner/upload - 200 null application/json; charset=utf-8 64.4984ms
+[14:04:21 INF] Creating Tesseract OCR Engine instance.
+[14:04:21 INF] Created OCR engine instance for Tesseract using plugin Tesseract OCR Plugin using OpenCV
+[ZXing] DECODED BARCODE: ME4MC56FGTA009533 1SK1LD10
+--- ALL OCR CANDIDATES BEFORE SCORING ---
+Candidate: 'IIIIIIIIIIIIIIIIIIIIIIIII' | Source: CleanLine | Pass: OriginalGray | Original: 'IIIIIIIIIIIIIIIIIIIIIIIII'
+Candidate: 'IIIIIIIIIIIIII' | Source: CleanLine | Pass: OriginalGray | Original: 'IIIIIIIIIIIIII'
+Candidate: 'IIIIIIIIIIIIIIIIIIIIIIIII' | Source: UltraCleanWord | Pass: OriginalGray | Original: 'IIIIIIIIIIIIIIIIIIIIIIIII'
+Candidate: 'IIIIIIIIIIIIII' | Source: UltraCleanWord | Pass: OriginalGray | Original: 'IIIIIIIIIIIIII'
+Candidate: 'IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIFRAMENNR' | Source: Spatial | Pass: OriginalGray | Original: 'I|||I||I|IIIIIIIIIII|[I||I|||||II|I||I||||I|I|I|I|I||I||I|I||I|II||II||I||||II|II||||I|| FRAME NN (R'
+Candidate: '1072SK1LD1000' | Source: Spatial | Pass: OriginalGray | Original: '1—07 —2 SK1LD 1000 ¢'
+Candidate: 'ME4MC56FG009533' | Source: Spatial | Pass: OriginalGray | Original: 'GZAFOZ 009533'
+Candidate: 'SSSSSATHLETICBLUEMETALLIC' | Source: Spatial | Pass: OriginalGray | Original: 'sssss ATHLETIC BLUE METALLIC'
+[14:04:23 INF] OCR completed. Confidence: 50%
+[14:04:23 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "v"."Name"
+FROM "VehicleColors" AS "v"
+[14:04:23 INF] Dynamic Color Matched from DB: ATHLETIC BLUE METALLIC
+[14:04:23 INF] Executed DbCommand (0ms) [Parameters=[@registrationNumber_Value='?' (Size = 17)], CommandType='Text', CommandTimeout='30']
+SELECT "v"."Id", "v"."Color", "v"."CreatedAt", "v"."CreatedBy", "v"."LastModifiedAt", "v"."LastModifiedBy", "v"."Make", "v"."Model", "v"."SyncStatus", "v"."Type", "v"."Year", "v"."ChassisNumber", "v"."EngineNumber", "v"."RegistrationNumber", "v"."Vin"
+FROM "Vehicles" AS "v"
+WHERE "v"."RegistrationNumber" IS NOT NULL AND "v"."RegistrationNumber" = @registrationNumber_Value
+LIMIT 1
+[14:04:23 INF] Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (Size = 22), @p2='?' (DbType = DateTime), @p3='?', @p4='?' (DbType = DateTime), @p5='?', @p6='?', @p7='?', @p8='?' (DbType = Int32), @p9='?' (Size = 7), @p10='?' (DbType = Int32), @p11='?' (Size = 17), @p12='?' (Size = 17)], CommandType='Text', CommandTimeout='30']
+INSERT INTO "Vehicles" ("Id", "Color", "CreatedAt", "CreatedBy", "LastModifiedAt", "LastModifiedBy", "Make", "Model", "SyncStatus", "Type", "Year", "RegistrationNumber", "Vin")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12);
+[14:04:23 INF] Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = DateTime), @p2='?', @p3='?' (DbType = DateTime), @p4='?', @p5='?' (Size = 179), @p6='?' (DbType = DateTime), @p7='?' (DbType = Guid), @p8='?' (Size = 9), @p9='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+INSERT INTO "VehicleScans" ("Id", "CreatedAt", "CreatedBy", "LastModifiedAt", "LastModifiedBy", "RawExtractedText", "ScanTime", "ScannerDeviceId", "Status", "VehicleId")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+[14:04:23 INF] Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (Size = 10), @p2='?' (DbType = DateTime), @p3='?', @p4='?' (Size = 40), @p5='?' (DbType = Int64), @p6='?' (DbType = Boolean), @p7='?' (DbType = DateTime), @p8='?', @p9='?' (Size = 101), @p10='?', @p11='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+INSERT INTO "ScanImages" ("Id", "ContentType", "CreatedAt", "CreatedBy", "FileName", "FileSizeBytes", "IsSynced", "LastModifiedAt", "LastModifiedBy", "LocalFilePath", "RemoteUrl", "VehicleScanId")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11);
+[14:04:23 INF] Successfully processed and saved Vehicle ME4MC56FGTA009533
+[14:04:23 INF] Request starting HTTP/1.1 GET http://localhost:5256/api/vehicles/image/e8f6bc10-a162-40d7-91b3-cf2a0d1331e3 - null null
+[14:04:23 INF] Executing endpoint 'VehicleVisionOCR.Backend.Controllers.VehiclesController.GetImage (VehicleVisionOCR.Backend)'
+[14:04:23 INF] Route matched with {action = "GetImage", controller = "Vehicles"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetImage(System.Guid) on controller VehicleVisionOCR.Backend.Controllers.VehiclesController (VehicleVisionOCR.Backend).
+[14:04:23 INF] Executed DbCommand (0ms) [Parameters=[@p='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT "s"."Id", "s"."ContentType", "s"."CreatedAt", "s"."CreatedBy", "s"."FileName", "s"."FileSizeBytes", "s"."IsSynced", "s"."LastModifiedAt", "s"."LastModifiedBy", "s"."LocalFilePath", "s"."RemoteUrl", "s"."VehicleScanId"
+FROM "ScanImages" AS "s"
+WHERE "s"."Id" = @p
+LIMIT 1
+[14:04:23 INF] Executing PhysicalFileResult, sending file 'C:\Users\ASUS\AppData\Local\VehicleVisionOCR\ScanData\Images\d21e0009-19ef-4c6e-bf12-95dc14ab14ae.jpg' with download name '' ...
+[14:04:23 INF] Executed action VehicleVisionOCR.Backend.Controllers.VehiclesController.GetImage (VehicleVisionOCR.Backend) in 17.4781ms
+[14:04:23 INF] Executed endpoint 'VehicleVisionOCR.Backend.Controllers.VehiclesController.GetImage (VehicleVisionOCR.Backend)'
+[14:04:23 INF] Request finished HTTP/1.1 GET http://localhost:5256/api/vehicles/image/e8f6bc10-a162-40d7-91b3-cf2a0d1331e3 - 200 68656 image/jpeg 24.2799ms
+[14:04:26 INF] Request starting HTTP/1.1 OPTIONS http://localhost:5256/api/vehicles/confirm-scan - null null
+[14:04:26 INF] CORS policy execution successful.
+[14:04:26 INF] Request finished HTTP/1.1 OPTIONS http://localhost:5256/api/vehicles/confirm-scan - 204 null null 0.7666ms
+[14:04:26 INF] Request starting HTTP/1.1 POST http://localhost:5256/api/vehicles/confirm-scan - application/json 52
+[14:04:26 INF] CORS policy execution successful.
+[14:04:26 INF] Executing endpoint 'VehicleVisionOCR.Backend.Controllers.VehiclesController.ConfirmScan (VehicleVisionOCR.Backend)'
+[14:04:26 INF] Route matched with {action = "ConfirmScan", controller = "Vehicles"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] ConfirmScan(VehicleVisionOCR.Backend.Controllers.ConfirmScanRequest) on controller VehicleVisionOCR.Backend.Controllers.VehiclesController (VehicleVisionOCR.Backend).
+[14:04:26 INF] Executed DbCommand (0ms) [Parameters=[@request_VehicleId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT "v"."Id", "v"."CreatedAt", "v"."CreatedBy", "v"."LastModifiedAt", "v"."LastModifiedBy", "v"."RawExtractedText", "v"."ScanTime", "v"."ScannerDeviceId", "v"."Status", "v"."VehicleId"
+FROM "VehicleScans" AS "v"
+WHERE "v"."VehicleId" = @request_VehicleId
+LIMIT 1
+[14:04:26 INF] Executed DbCommand (0ms) [Parameters=[@p1='?' (DbType = Guid), @p0='?' (Size = 9)], CommandType='Text', CommandTimeout='30']
+UPDATE "VehicleScans" SET "Status" = @p0
+WHERE "Id" = @p1
+RETURNING 1;
+[14:04:26 INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType7`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+[14:04:26 INF] Executed action VehicleVisionOCR.Backend.Controllers.VehiclesController.ConfirmScan (VehicleVisionOCR.Backend) in 17.0182ms
+[14:04:26 INF] Executed endpoint 'VehicleVisionOCR.Backend.Controllers.VehiclesController.ConfirmScan (VehicleVisionOCR.Backend)'
+[14:04:26 INF] Request finished HTTP/1.1 POST http://localhost:5256/api/vehicles/confirm-scan - 200 null application/json; charset=utf-8 22.7796ms
+[14:04:30 INF] Request starting HTTP/1.1 POST http://192.168.31.57:5256/api/mobilescanner/upload - multipart/form-data; boundary=----WebKitFormBoundary7ttwQ6CYAox5ryV5 68871
+[14:04:30 INF] CORS policy execution successful.
+[14:04:30 INF] Executing endpoint 'VehicleVisionOCR.Backend.Controllers.MobileScannerController.UploadImage (VehicleVisionOCR.Backend)'
+[14:04:30 INF] Route matched with {action = "UploadImage", controller = "MobileScanner"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] UploadImage(Microsoft.AspNetCore.Http.IFormFile) on controller VehicleVisionOCR.Backend.Controllers.MobileScannerController (VehicleVisionOCR.Backend).
+[14:04:30 INF] Received mobile scan image of size 68656 bytes.
+[14:04:30 INF] Image captured from scanner MOB-WEB-001. Queuing for OCR.
+[14:04:30 INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType3`1[[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+[14:04:30 INF] Starting OCR processing on queued image.
+[14:04:30 INF] Executed action VehicleVisionOCR.Backend.Controllers.MobileScannerController.UploadImage (VehicleVisionOCR.Backend) in 6.745ms
+[14:04:30 INF] Creating Tesseract OCR Engine instance.
+[14:04:30 INF] Executed endpoint 'VehicleVisionOCR.Backend.Controllers.MobileScannerController.UploadImage (VehicleVisionOCR.Backend)'
+[14:04:30 INF] Created OCR engine instance for Tesseract using plugin Tesseract OCR Plugin using OpenCV
+[14:04:30 INF] Request finished HTTP/1.1 POST http://192.168.31.57:5256/api/mobilescanner/upload - 200 null application/json; charset=utf-8 8.9609ms
+[ZXing] DECODED BARCODE: ME4MC56FGTA009533 1SK1LD10
+--- ALL OCR CANDIDATES BEFORE SCORING ---
+Candidate: 'IIIIIIIIIIIIIIIIIIIIIIIII' | Source: CleanLine | Pass: OriginalGray | Original: 'IIIIIIIIIIIIIIIIIIIIIIIII'
+Candidate: 'IIIIIIIIIIIIII' | Source: CleanLine | Pass: OriginalGray | Original: 'IIIIIIIIIIIIII'
+Candidate: 'IIIIIIIIIIIIIIIIIIIIIIIII' | Source: UltraCleanWord | Pass: OriginalGray | Original: 'IIIIIIIIIIIIIIIIIIIIIIIII'
+Candidate: 'IIIIIIIIIIIIII' | Source: UltraCleanWord | Pass: OriginalGray | Original: 'IIIIIIIIIIIIII'
+Candidate: 'IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIFRAMENNR' | Source: Spatial | Pass: OriginalGray | Original: 'I|||I||I|IIIIIIIIIII|[I||I|||||II|I||I||||I|I|I|I|I||I||I|I||I|II||II||I||||II|II||||I|| FRAME NN (R'
+Candidate: '1072SK1LD1000' | Source: Spatial | Pass: OriginalGray | Original: '1—07 —2 SK1LD 1000 ¢'
+Candidate: 'ME4MC56FG009533' | Source: Spatial | Pass: OriginalGray | Original: 'GZAFOZ 009533'
+Candidate: 'SSSSSATHLETICBLUEMETALLIC' | Source: Spatial | Pass: OriginalGray | Original: 'sssss ATHLETIC BLUE METALLIC'
+[14:04:31 INF] OCR completed. Confidence: 50%
+[14:04:31 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "v"."Name"
+FROM "VehicleColors" AS "v"
+[14:04:31 INF] Dynamic Color Matched from DB: ATHLETIC BLUE METALLIC
+[14:04:31 INF] Executed DbCommand (0ms) [Parameters=[@registrationNumber_Value='?' (Size = 17)], CommandType='Text', CommandTimeout='30']
+SELECT "v"."Id", "v"."Color", "v"."CreatedAt", "v"."CreatedBy", "v"."LastModifiedAt", "v"."LastModifiedBy", "v"."Make", "v"."Model", "v"."SyncStatus", "v"."Type", "v"."Year", "v"."ChassisNumber", "v"."EngineNumber", "v"."RegistrationNumber", "v"."Vin"
+FROM "Vehicles" AS "v"
+WHERE "v"."RegistrationNumber" IS NOT NULL AND "v"."RegistrationNumber" = @registrationNumber_Value
+LIMIT 1
+[14:04:31 WRN] Duplicate barcode detected: ME4MC56FGTA009533
+[14:04:31 INF] Request starting HTTP/1.1 GET http://localhost:5256/api/vehicles/image/file/9c1e808e-7b43-4475-910e-537d744341b9.jpg - null null
+[14:04:31 INF] Executing endpoint 'VehicleVisionOCR.Backend.Controllers.VehiclesController.GetImageByFileName (VehicleVisionOCR.Backend)'
+[14:04:31 INF] Route matched with {action = "GetImageByFileName", controller = "Vehicles"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult GetImageByFileName(System.String) on controller VehicleVisionOCR.Backend.Controllers.VehiclesController (VehicleVisionOCR.Backend).
+[14:04:31 INF] Executing PhysicalFileResult, sending file 'C:\Users\ASUS\AppData\Local\VehicleVisionOCR\ScanData\Images\9c1e808e-7b43-4475-910e-537d744341b9.jpg' with download name '' ...
+[14:04:31 INF] Executed action VehicleVisionOCR.Backend.Controllers.VehiclesController.GetImageByFileName (VehicleVisionOCR.Backend) in 1.6529ms
+[14:04:31 INF] Executed endpoint 'VehicleVisionOCR.Backend.Controllers.VehiclesController.GetImageByFileName (VehicleVisionOCR.Backend)'
+[14:04:31 INF] Request finished HTTP/1.1 GET http://localhost:5256/api/vehicles/image/file/9c1e808e-7b43-4475-910e-537d744341b9.jpg - 200 68656 image/jpeg 4.4541ms
+[15:06:12 INF] Request starting HTTP/1.1 GET http://192.168.31.57:5256/ - null null
+[15:06:12 INF] Executing endpoint 'Fallback {*path:nonfile}'
+[15:06:12 INF] Executed endpoint 'Fallback {*path:nonfile}'
+[15:06:12 INF] Request finished HTTP/1.1 GET http://192.168.31.57:5256/ - 404 null null 2.5807ms
+[15:06:21 INF] Request starting HTTP/1.1 POST http://192.168.31.57:5256/api/mobilescanner/upload - multipart/form-data; boundary=----WebKitFormBoundaryzRhN5Nny8ANbRosY 68871
+[15:06:21 INF] CORS policy execution successful.
+[15:06:21 INF] Executing endpoint 'VehicleVisionOCR.Backend.Controllers.MobileScannerController.UploadImage (VehicleVisionOCR.Backend)'
+[15:06:21 INF] Route matched with {action = "UploadImage", controller = "MobileScanner"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] UploadImage(Microsoft.AspNetCore.Http.IFormFile) on controller VehicleVisionOCR.Backend.Controllers.MobileScannerController (VehicleVisionOCR.Backend).
+[15:06:21 INF] Received mobile scan image of size 68656 bytes.
+[15:06:21 INF] Image captured from scanner MOB-WEB-001. Queuing for OCR.
+[15:06:21 INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType3`1[[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+[15:06:21 INF] Executed action VehicleVisionOCR.Backend.Controllers.MobileScannerController.UploadImage (VehicleVisionOCR.Backend) in 3.0945ms
+[15:06:21 INF] Executed endpoint 'VehicleVisionOCR.Backend.Controllers.MobileScannerController.UploadImage (VehicleVisionOCR.Backend)'
+[15:06:21 INF] Request finished HTTP/1.1 POST http://192.168.31.57:5256/api/mobilescanner/upload - 200 null application/json; charset=utf-8 4.9364ms
+[15:06:21 INF] Starting OCR processing on queued image.
+[15:06:21 INF] Creating Tesseract OCR Engine instance.
+[15:06:21 INF] Created OCR engine instance for Tesseract using plugin Tesseract OCR Plugin using OpenCV
+[ZXing] DECODED BARCODE: ME4MC56FGTA009533 1SK1LD10
+--- ALL OCR CANDIDATES BEFORE SCORING ---
+Candidate: 'IIIIIIIIIIIIIIIIIIIIIIIII' | Source: CleanLine | Pass: OriginalGray | Original: 'IIIIIIIIIIIIIIIIIIIIIIIII'
+Candidate: 'IIIIIIIIIIIIII' | Source: CleanLine | Pass: OriginalGray | Original: 'IIIIIIIIIIIIII'
+Candidate: 'IIIIIIIIIIIIIIIIIIIIIIIII' | Source: UltraCleanWord | Pass: OriginalGray | Original: 'IIIIIIIIIIIIIIIIIIIIIIIII'
+Candidate: 'IIIIIIIIIIIIII' | Source: UltraCleanWord | Pass: OriginalGray | Original: 'IIIIIIIIIIIIII'
+Candidate: 'IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIFRAMENNR' | Source: Spatial | Pass: OriginalGray | Original: 'I|||I||I|IIIIIIIIIII|[I||I|||||II|I||I||||I|I|I|I|I||I||I|I||I|II||II||I||||II|II||||I|| FRAME NN (R'
+Candidate: '1072SK1LD1000' | Source: Spatial | Pass: OriginalGray | Original: '1—07 —2 SK1LD 1000 ¢'
+Candidate: 'ME4MC56FG009533' | Source: Spatial | Pass: OriginalGray | Original: 'GZAFOZ 009533'
+Candidate: 'SSSSSATHLETICBLUEMETALLIC' | Source: Spatial | Pass: OriginalGray | Original: 'sssss ATHLETIC BLUE METALLIC'
+[15:06:21 INF] OCR completed. Confidence: 50%
+[15:06:21 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "v"."Name"
+FROM "VehicleColors" AS "v"
+[15:06:21 INF] Dynamic Color Matched from DB: ATHLETIC BLUE METALLIC
+[15:06:21 INF] Executed DbCommand (0ms) [Parameters=[@registrationNumber_Value='?' (Size = 17)], CommandType='Text', CommandTimeout='30']
+SELECT "v"."Id", "v"."Color", "v"."CreatedAt", "v"."CreatedBy", "v"."LastModifiedAt", "v"."LastModifiedBy", "v"."Make", "v"."Model", "v"."SyncStatus", "v"."Type", "v"."Year", "v"."ChassisNumber", "v"."EngineNumber", "v"."RegistrationNumber", "v"."Vin"
+FROM "Vehicles" AS "v"
+WHERE "v"."RegistrationNumber" IS NOT NULL AND "v"."RegistrationNumber" = @registrationNumber_Value
+LIMIT 1
+[15:06:21 WRN] Duplicate barcode detected: ME4MC56FGTA009533
+[15:06:21 INF] Request starting HTTP/1.1 GET http://localhost:5256/api/vehicles/image/file/7e781091-d487-4685-aec4-e9ac586703dc.jpg - null null
+[15:06:21 INF] Executing endpoint 'VehicleVisionOCR.Backend.Controllers.VehiclesController.GetImageByFileName (VehicleVisionOCR.Backend)'
+[15:06:21 INF] Route matched with {action = "GetImageByFileName", controller = "Vehicles"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult GetImageByFileName(System.String) on controller VehicleVisionOCR.Backend.Controllers.VehiclesController (VehicleVisionOCR.Backend).
+[15:06:21 INF] Executing PhysicalFileResult, sending file 'C:\Users\ASUS\AppData\Local\VehicleVisionOCR\ScanData\Images\7e781091-d487-4685-aec4-e9ac586703dc.jpg' with download name '' ...
+[15:06:21 INF] Executed action VehicleVisionOCR.Backend.Controllers.VehiclesController.GetImageByFileName (VehicleVisionOCR.Backend) in 1.1302ms
+[15:06:21 INF] Executed endpoint 'VehicleVisionOCR.Backend.Controllers.VehiclesController.GetImageByFileName (VehicleVisionOCR.Backend)'
+[15:06:21 INF] Request finished HTTP/1.1 GET http://localhost:5256/api/vehicles/image/file/7e781091-d487-4685-aec4-e9ac586703dc.jpg - 200 68656 image/jpeg 2.691ms
+[15:31:08 INF] Connection id "0HNN0N5TV1SV9", Request id "0HNN0N5TV1SV9:00000001": the application aborted the connection.
+[15:31:08 INF] Executed endpoint '/hubs/scanner'
+[15:31:08 INF] Request finished HTTP/1.1 GET http://localhost:5256/hubs/scanner?id=6r6JDVvaD1h3bNEOhSI6YA - 101 null null 5229877.2241ms

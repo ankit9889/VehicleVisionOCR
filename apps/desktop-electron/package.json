@@ -1,0 +1,41 @@
+{
+  "name": "vehicle-vision-ocr",
+  "version": "2.0.0",
+  "description": "Vehicle Vision OCR - Offline Desktop Application",
+  "main": "main.js",
+  "scripts": {
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\" \"wait-on http://localhost:5173 && cross-env ELECTRON_START_URL=http://localhost:5173 electron .\"",
+    "start:frontend": "cd ../frontend-react && npm run dev",
+    "start:backend": "cd ../backend-dotnet && dotnet run",
+    "build:frontend": "cd ../frontend-react && npm run build",
+    "build:backend-x64": "cd ../backend-dotnet && dotnet publish -c Release -r win-x64 --self-contained true",
+    "build:backend-x86": "cd ../backend-dotnet && dotnet publish -c Release -r win-x86 --self-contained true",
+    "build:electron-x64": "electron-builder --win --x64 -c.extraMetadata.main=main.js -c.files=main.js -c.files=preload.js -c.files=../frontend-react/dist/**/* -c.files=../backend-dotnet/bin/Release/net8.0/win-x64/publish/**/*",
+    "build:electron-ia32": "electron-builder --win --ia32 -c.extraMetadata.main=main.js -c.files=main.js -c.files=preload.js -c.files=../frontend-react/dist/**/* -c.files=../backend-dotnet/bin/Release/net8.0/win-x86/publish/**/*",
+    "build:all": "npm run build:frontend && npm run build:backend-x64 && npm run build:backend-x86 && npm run build:electron-x64 && npm run build:electron-ia32"
+  },
+  "build": {
+    "appId": "com.vehiclevision.ocr",
+    "productName": "Vehicle Vision OCR",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "../frontend-react/dist/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  },
+  "author": "Your Company",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^10.0.3",
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
+    "wait-on": "^9.0.10"
+  }
+}

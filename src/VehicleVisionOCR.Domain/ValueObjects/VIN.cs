@@ -1,0 +1,25 @@
+using System;
+
+namespace VehicleVisionOCR.Domain.ValueObjects
+{
+    /// <summary>
+    /// Value object representing a Vehicle Identification Number (VIN).
+    /// </summary>
+    public record VIN
+    {
+        public string Value { get; init; }
+
+        public VIN(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException("VIN cannot be empty.", nameof(value));
+            
+            if (value.Trim().Length != 17)
+                throw new ArgumentException("VIN must be exactly 17 characters long.", nameof(value));
+
+            Value = value.Trim().ToUpperInvariant();
+        }
+
+        public override string ToString() => Value;
+    }
+}

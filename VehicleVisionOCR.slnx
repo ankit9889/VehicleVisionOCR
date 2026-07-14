@@ -1,0 +1,25 @@
+<Solution>
+  <Folder Name="/apps/" />
+  <Folder Name="/apps/backend-dotnet/">
+    <Project Path="apps/backend-dotnet/VehicleVisionOCR.Backend.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/VehicleVisionOCR.Application/VehicleVisionOCR.Application.csproj" />
+    <Project Path="src/VehicleVisionOCR.Domain/VehicleVisionOCR.Domain.csproj" />
+    <Project Path="src/VehicleVisionOCR.Infrastructure/VehicleVisionOCR.Infrastructure.csproj" />
+    <Project Path="src/VehicleVisionOCR.OCR.Core/VehicleVisionOCR.OCR.Core.csproj" />
+    <Project Path="src/VehicleVisionOCR.OCR.Tesseract/VehicleVisionOCR.OCR.Tesseract.csproj" />
+    <Project Path="src/VehicleVisionOCR.Scanner.Core/VehicleVisionOCR.Scanner.Core.csproj" />
+    <Project Path="src/VehicleVisionOCR.Scanner.DataWedge/VehicleVisionOCR.Scanner.DataWedge.csproj" />
+    <Project Path="src/VehicleVisionOCR.Scanner.Emulator/VehicleVisionOCR.Scanner.Emulator.csproj" />
+    <Project Path="src/VehicleVisionOCR.Scanner.MobileWeb/VehicleVisionOCR.Scanner.MobileWeb.csproj" />
+    <Project Path="src/VehicleVisionOCR.Scanner.ZebraWindows/VehicleVisionOCR.Scanner.ZebraWindows.csproj" />
+    <Project Path="src/VehicleVisionOCR.Shared/VehicleVisionOCR.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/VehicleVisionOCR.Application.Tests/VehicleVisionOCR.Application.Tests.csproj" />
+    <Project Path="tests/VehicleVisionOCR.Domain.Tests/VehicleVisionOCR.Domain.Tests.csproj" />
+    <Project Path="tests/VehicleVisionOCR.Infrastructure.Tests/VehicleVisionOCR.Infrastructure.Tests.csproj" />
+    <Project Path="tests/VehicleVisionOCR.UI.Tests/VehicleVisionOCR.UI.Tests.csproj" />
+  </Folder>
+</Solution>

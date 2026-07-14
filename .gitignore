@@ -1,0 +1,31 @@
+# .NET Core
+bin/
+obj/
+TestResults/
+*.user
+*.suo
+.vs/
+*.log
+
+# Node.js
+node_modules/
+dist/
+build/
+.env
+dist-*/
+out/
+*.tmp
+*.zip
+*.exe
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc logs
+apps/backend-dotnet/Logs/
+logs/

@@ -94,9 +94,22 @@ namespace VehicleVisionOCR.OCR.Tesseract
                             _logger.LogInformation($"ZXing barcode cleaned from multi-part scan to: {decodedBarcode}");
                         }
                     }
+
+                    // 2.5 Upscale for Tesseract if image is too small (helps with tiny/thin text like colors)
+                    using var tesseractMat = new Mat();
+                    const int minWidth = 1200; // Increased to 1200 to guarantee clear upscaling
+                    if (srcMat.Width > 0 && srcMat.Width < minWidth)
+                    {
+                        double scale = (double)minWidth / srcMat.Width;
+                        Cv2.Resize(srcMat, tesseractMat, new OpenCvSharp.Size(minWidth, (int)(srcMat.Height * scale)), 0, 0, InterpolationFlags.Cubic);
+                    }
+                    else
+                    {
+                        srcMat.CopyTo(tesseractMat);
+                    }
                     
                     // 3. Preprocessing multiple Mats
-                    var preprocessedMats = GeneratePreprocessedVariations(srcMat);
+                    var preprocessedMats = GeneratePreprocessedVariations(tesseractMat);
 
                     // 4. Multiple OCR Passes
                     var allCandidates = new List<VinCandidate>();
@@ -207,8 +220,8 @@ namespace VehicleVisionOCR.OCR.Tesseract
                         result.ExtractedFields.Add(new OcrField { Key = "Barcode", Value = decodedBarcode, Confidence = new OcrConfidence { Percentage = 99.8 } });
                     }
 
-                    // Re-run color and model on the best raw text pass (usually the first one)
-                    ExtractColorAndModel(allRawTexts.FirstOrDefault() ?? "", result.ExtractedFields);
+                    // Re-run color and model on the combined raw text of ALL passes
+                    ExtractColorAndModel(string.Join("\n", allRawTexts), result.ExtractedFields);
 
                     return result;
                 }

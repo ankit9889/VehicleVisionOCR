@@ -10,6 +10,11 @@ export const OCR: React.FC = () => {
   const [vinEdit, setVinEdit] = useState('');
   const [colorEdit, setColorEdit] = useState('');
   const [modelEdit, setModelEdit] = useState('');
+  const [availableColors, setAvailableColors] = useState<string[]>([]);
+
+  React.useEffect(() => {
+    apiClient.get('/colors').then(res => setAvailableColors(res.data)).catch(console.error);
+  }, []);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -129,9 +134,11 @@ export const OCR: React.FC = () => {
                     <TextField 
                       fullWidth 
                       value={colorEdit} 
-                      onChange={(e) => setColorEdit(e.target.value)}
+                      onChange={(e) => setColorEdit(e.target.value.toUpperCase())}
                       variant="outlined"
                       size="small"
+                      error={colorEdit.trim().length > 0 && !availableColors.includes(colorEdit.trim().toUpperCase())}
+                      helperText={colorEdit.trim().length > 0 && !availableColors.includes(colorEdit.trim().toUpperCase()) ? "⚠️ Warning: This color is not in the Database!" : ""}
                     />
                   </Box>
 

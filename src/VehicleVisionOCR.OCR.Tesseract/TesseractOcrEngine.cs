@@ -368,6 +368,12 @@ namespace VehicleVisionOCR.OCR.Tesseract
             var kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(7, 1));
             Cv2.MorphologyEx(binaryMat, barcodeRemovalMat, MorphTypes.Open, kernel);
             dict.Add("BarcodeRemoval", barcodeRemovalMat);
+
+            // 8. Thickened Text Pass (Erosion thickens dark pixels/text on a light background)
+            var thickenedMat = new Mat();
+            var thickenKernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(2, 2));
+            Cv2.Erode(gray, thickenedMat, thickenKernel);
+            dict.Add("ErodedGray", thickenedMat);
             
             return dict;
         }
@@ -590,7 +596,8 @@ namespace VehicleVisionOCR.OCR.Tesseract
 
         private void ExtractColorAndModel(string rawText, List<OcrField> fields)
         {
-            var colorRegex = new Regex(@"(?:[A-Z]+\s+)?(?:[A-Z]+\s+)?(BLACK|WHITE|RED|BLUE|GREY|GRAY|SILVER|GREEN|YELLOW|ORANGE|BROWN)(?:\s+[A-Z]+)?", RegexOptions.IgnoreCase);
+            // Replaced the simple list with a broader list including finishes
+            var colorRegex = new Regex(@"(?:[A-Z]+\s+)?(?:[A-Z]+\s+)?(BLACK|WHITE|RED|BLUE|GREY|GRAY|SILVER|GREEN|YELLOW|ORANGE|BROWN|PEARL|MICA|METALLIC)(?:\s+[A-Z]+)?", RegexOptions.IgnoreCase);
             var colorMatch = colorRegex.Match(rawText);
 
             if (colorMatch.Success)
@@ -610,7 +617,7 @@ namespace VehicleVisionOCR.OCR.Tesseract
                 fields.Add(new OcrField { Key = "Color", Value = extractedColor, Confidence = new OcrConfidence { Percentage = 80.0 } });
             }
 
-            var modelRegex = new Regex(@"\b(CBF\d+[A-Z]*|Activa\w*|Dio\w*)\b", RegexOptions.IgnoreCase);
+            var modelRegex = new Regex(@"\b(CBF?\d+[A-Z]*|Activa\w*|Dio\w*)\b", RegexOptions.IgnoreCase);
             var modelMatch = modelRegex.Match(rawText);
 
             if (modelMatch.Success)

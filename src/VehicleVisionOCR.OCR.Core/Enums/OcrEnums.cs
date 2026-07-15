@@ -8,6 +8,7 @@ namespace VehicleVisionOCR.OCR.Core.Enums
         GoogleVision,
         AwsTextract,
         EasyOcr,
+        PositionBased,
         Custom
     }
 

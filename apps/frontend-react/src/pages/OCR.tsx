@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Button, Card, CardContent, CardHeader, Divider, Typography, TextField, CircularProgress, Chip } from '@mui/material';
+import { Box, Button, Card, CardContent, CardHeader, Divider, Typography, TextField, CircularProgress, Chip, FormControlLabel, Switch } from '@mui/material';
 import { useOcrStore } from '../stores/ocrStore';
 import { apiClient } from '../api/client';
 import { useSnackbar } from 'notistack';
@@ -11,6 +11,7 @@ export const OCR: React.FC = () => {
   const [colorEdit, setColorEdit] = useState('');
   const [modelEdit, setModelEdit] = useState('');
   const [availableColors, setAvailableColors] = useState<string[]>([]);
+  const [usePositionBased, setUsePositionBased] = useState(false);
 
   React.useEffect(() => {
     apiClient.get('/colors').then(res => setAvailableColors(res.data)).catch(console.error);
@@ -33,7 +34,7 @@ export const OCR: React.FC = () => {
     try {
       setProcessing(true);
       const base64Data = lastImage.split(',')[1];
-      const response = await apiClient.post('/ocr/process', { base64Image: base64Data });
+      const response = await apiClient.post('/ocr/process', { base64Image: base64Data, usePositionBasedExtraction: usePositionBased });
       setResult(response.data.result);
       
       const vinField = response.data.result?.extractedFields?.find((f: any) => f.key === 'VIN');
@@ -70,7 +71,12 @@ export const OCR: React.FC = () => {
               {lastImage ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <img src={lastImage} alt="Captured" style={{ maxWidth: '100%', maxHeight: '500px', objectFit: 'contain' }} />
-                  <Button variant="contained" sx={{ mt: 3 }} onClick={processImage} disabled={isProcessing}>
+                  <FormControlLabel 
+                    control={<Switch checked={usePositionBased} onChange={(e) => setUsePositionBased(e.target.checked)} />} 
+                    label="Position-Based Extraction (For Standard Labels)" 
+                    sx={{ mt: 2 }}
+                  />
+                  <Button variant="contained" sx={{ mt: 1 }} onClick={processImage} disabled={isProcessing}>
                     {isProcessing ? <CircularProgress size={24} /> : 'Process OCR'}
                   </Button>
                 </Box>

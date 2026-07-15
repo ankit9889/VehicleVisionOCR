@@ -8,8 +8,9 @@ namespace VehicleVisionOCR.OCR.Tesseract
     {
         public static IServiceCollection AddTesseractOcrPlugin(this IServiceCollection services)
         {
-            // Register Plugin (For dynamic discovery by the framework)
+            // Register Plugins (For dynamic discovery by the framework)
             services.AddSingleton<IOcrPlugin, TesseractOcrPlugin>();
+            services.AddSingleton<IOcrPlugin, PositionBasedOcrPlugin>();
 
             // Register OpenCV Preprocessors so they can be injected into the Pipeline
             services.AddTransient<IImageDeskew, ImageDeskew>();

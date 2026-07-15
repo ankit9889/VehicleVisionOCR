@@ -30,7 +30,8 @@ namespace VehicleVisionOCR.Backend.Controllers
                 byte[] imageBytes = Convert.FromBase64String(request.Base64Image);
                 
                 var ocrRequest = new VehicleVisionOCR.OCR.Core.Models.OcrRequest { ImageData = imageBytes };
-                var result = await _ocrManager.ProcessAsync(ocrRequest, VehicleVisionOCR.OCR.Core.Enums.OcrEngineType.Tesseract);
+                var engineType = request.UsePositionBasedExtraction ? VehicleVisionOCR.OCR.Core.Enums.OcrEngineType.PositionBased : VehicleVisionOCR.OCR.Core.Enums.OcrEngineType.Tesseract;
+                var result = await _ocrManager.ProcessAsync(ocrRequest, engineType);
                 
                 // Attempt dynamic color matching from Database for UI testing
                 if (result.Status == VehicleVisionOCR.OCR.Core.Enums.OcrStatus.Success && result.Result != null && !string.IsNullOrEmpty(result.Result.RawText))
@@ -72,5 +73,6 @@ namespace VehicleVisionOCR.Backend.Controllers
     public class ProcessImageRequest
     {
         public string Base64Image { get; set; } = string.Empty;
+        public bool UsePositionBasedExtraction { get; set; }
     }
 }

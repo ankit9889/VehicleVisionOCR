@@ -236,20 +236,24 @@ namespace VehicleVisionOCR.OCR.Tesseract
                 
                 using var gray = new Mat();
                 Cv2.CvtColor(srcMat, gray, ColorConversionCodes.BGR2GRAY);
+
+                // Add a white padding border (Quiet Zone) to help ZXing detect barcodes that are printed too close to the edge
+                using var paddedGray = new Mat();
+                Cv2.CopyMakeBorder(gray, paddedGray, 50, 50, 50, 50, BorderTypes.Constant, new Scalar(255));
                 
                 // Try 1: Raw Grayscale
-                var result = TryDecodeMat(gray, reader);
+                var result = TryDecodeMat(paddedGray, reader);
                 if (result != null) return result;
                 
                 // Try 2: Scale UP 2x
                 using var scaledUp = new Mat();
-                Cv2.Resize(gray, scaledUp, new OpenCvSharp.Size(0,0), 2.0, 2.0, InterpolationFlags.Cubic);
+                Cv2.Resize(paddedGray, scaledUp, new OpenCvSharp.Size(0,0), 2.0, 2.0, InterpolationFlags.Cubic);
                 result = TryDecodeMat(scaledUp, reader);
                 if (result != null) return result;
                 
                 // Try 3: Gaussian Blur + Otsu Threshold
                 using var blurred = new Mat();
-                Cv2.GaussianBlur(gray, blurred, new OpenCvSharp.Size(5, 5), 0);
+                Cv2.GaussianBlur(paddedGray, blurred, new OpenCvSharp.Size(5, 5), 0);
                 using var blurBin = new Mat();
                 Cv2.Threshold(blurred, blurBin, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
                 result = TryDecodeMat(blurBin, reader);
@@ -258,19 +262,19 @@ namespace VehicleVisionOCR.OCR.Tesseract
                 // Try 4: CLAHE
                 using var clahe = Cv2.CreateCLAHE(clipLimit: 2.0, tileGridSize: new OpenCvSharp.Size(8, 8));
                 using var claheMat = new Mat();
-                clahe.Apply(gray, claheMat);
+                clahe.Apply(paddedGray, claheMat);
                 result = TryDecodeMat(claheMat, reader);
                 if (result != null) return result;
                 
                 // Try 5: Binary Threshold (Standard)
                 using var binMat = new Mat();
-                Cv2.Threshold(gray, binMat, 128, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
+                Cv2.Threshold(paddedGray, binMat, 128, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
                 result = TryDecodeMat(binMat, reader);
                 if (result != null) return result;
 
                 // Try 6: Adaptive Threshold
                 using var adaptMat = new Mat();
-                Cv2.AdaptiveThreshold(gray, adaptMat, 255, AdaptiveThresholdTypes.GaussianC, ThresholdTypes.Binary, 21, 10);
+                Cv2.AdaptiveThreshold(paddedGray, adaptMat, 255, AdaptiveThresholdTypes.GaussianC, ThresholdTypes.Binary, 21, 10);
                 result = TryDecodeMat(adaptMat, reader);
                 if (result != null) return result;
                 
@@ -383,15 +387,19 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     if (chars[i] == 'Q') chars[i] = '0';
                 }
 
-                // 2. VIS (Serial Number) Rules: The last 4-6 characters of our VINs are numeric.
-                // We fix S->5, B->8, P->0, Z->2 in the last 6 characters to prevent alphanumeric confusion.
-                int visStartIndex = Math.Max(0, chars.Length - 6);
-                for (int i = visStartIndex; i < chars.Length; i++)
+                // 2. VIS (Serial Number) Rules: ONLY FOR EXACTLY 17-CHAR VINS
+                // For standard 17-char VINs, the last 4-6 characters are numeric.
+                // We fix S->5, B->8, P->0, Z->2 to prevent alphanumeric confusion.
+                if (chars.Length == 17)
                 {
-                    if (chars[i] == 'S') chars[i] = '5';
-                    if (chars[i] == 'B') chars[i] = '8';
-                    if (chars[i] == 'P') chars[i] = '0'; // P is usually read instead of 0
-                    if (chars[i] == 'Z') chars[i] = '2';
+                    int visStartIndex = Math.Max(0, chars.Length - 6);
+                    for (int i = visStartIndex; i < chars.Length; i++)
+                    {
+                        if (chars[i] == 'S') chars[i] = '5';
+                        if (chars[i] == 'B') chars[i] = '8';
+                        if (chars[i] == 'P') chars[i] = '0'; // P is usually read instead of 0
+                        if (chars[i] == 'Z') chars[i] = '2';
+                    }
                 }
                 
                 corrected = new string(chars);

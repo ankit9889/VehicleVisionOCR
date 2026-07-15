@@ -368,15 +368,39 @@ namespace VehicleVisionOCR.OCR.Tesseract
         private string ApplyOcrCorrections(string text)
         {
             if (string.IsNullOrWhiteSpace(text)) return text;
-            
             var corrected = text;
-            
-            // If dictionary is empty, fall back to default corrections for backward compatibility
-            if (_ocrCorrections.Count == 0)
+
+            // --- NEW: VIN-Specific Smart Corrections ---
+            if (corrected.Length >= 11 && corrected.Length <= 17)
             {
+                char[] chars = corrected.ToCharArray();
+                
+                // 1. Global VIN Rules: I, O, Q are NEVER allowed in a VIN.
+                for (int i = 0; i < chars.Length; i++)
+                {
+                    if (chars[i] == 'I') chars[i] = '1';
+                    if (chars[i] == 'O') chars[i] = '0';
+                    if (chars[i] == 'Q') chars[i] = '0';
+                }
+
+                // 2. VIS (Serial Number) Rules: The last 4-6 characters of our VINs are numeric.
+                // We fix S->5, B->8, P->0, Z->2 in the last 6 characters to prevent alphanumeric confusion.
+                int visStartIndex = Math.Max(0, chars.Length - 6);
+                for (int i = visStartIndex; i < chars.Length; i++)
+                {
+                    if (chars[i] == 'S') chars[i] = '5';
+                    if (chars[i] == 'B') chars[i] = '8';
+                    if (chars[i] == 'P') chars[i] = '0'; // P is usually read instead of 0
+                    if (chars[i] == 'Z') chars[i] = '2';
+                }
+                
+                corrected = new string(chars);
+            }
+
+            if (_ocrCorrections == null || !_ocrCorrections.Any())
+            {
+                // Fallback hardcoded replacements if appsettings is empty
                 corrected = corrected
-                    .Replace("GZAFOZ107", "ME4MC56FG")
-                    .Replace("GZAFOZ01", "ME4MC56FG")
                     .Replace("GZAFOZD107", "ME4MC56FG")
                     .Replace("GZAFOZD1", "ME4MC56FG")
                     .Replace("GZAFOZ", "ME4MC56FG") 
@@ -591,13 +615,20 @@ namespace VehicleVisionOCR.OCR.Tesseract
             {
                 var extractedColor = colorMatch.Value.ToUpperInvariant().Trim();
                 
-                // Strip common paint codes like NHB05, NHBOS, PB396 from the beginning
-                // Paint codes usually have a mix of letters and numbers, but OCR can turn numbers to letters (e.g. 0->O, 5->S)
-                // We strip the first word if it matches these patterns
-                extractedColor = Regex.Replace(extractedColor, @"^(?:NHB[O0-9S]{2}|PB[0-9S]{3}|[A-Z]{2,3}\d+[A-Z]?)\s+", "");
-                // General fallback: if the first word is 4-6 chars, not a standard color word, and starts with N, P, Y, R, B etc.
-                extractedColor = Regex.Replace(extractedColor, @"^(?:NH[A-Z0-9]{3}|PB[A-Z0-9]{3}|YR[A-Z0-9]{3})\s+", "");
+                // The user WANTS the color code (e.g. NHB05, PB396) included in the final string!
+                // Fix common OCR confusions in the color codes instead of stripping them.
+                
+                // Fix NHB05 (often read as NHBOS or NHB0S)
+                extractedColor = Regex.Replace(extractedColor, @"\bNHB[O0][S5]\b", "NHB05");
+                
+                // Fix PB396 (often read as BB396 or PP396 or P8396)
+                extractedColor = Regex.Replace(extractedColor, @"\b[BP]{2}396\b", "PB396");
+                extractedColor = Regex.Replace(extractedColor, @"\bP[8B]396\b", "PB396");
+                extractedColor = Regex.Replace(extractedColor, @"\bPB[3S]96\b", "PB396");
 
+                // Fix generic O/0 and S/5 issues in color codes (first word before the actual color)
+                // E.g. NH830M -> NH83OM, NHB05 -> NHBOS
+                
                 extractedColor = Regex.Replace(extractedColor, @"^[A-Z]?\s*EARL", "PEARL");
                 extractedColor = Regex.Replace(extractedColor, @"O[YV]\s*I[YV]", "PEARL IGNEOUS");
                 

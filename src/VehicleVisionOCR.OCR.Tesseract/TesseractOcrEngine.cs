@@ -371,7 +371,7 @@ namespace VehicleVisionOCR.OCR.Tesseract
             var corrected = text;
 
             // --- NEW: VIN-Specific Smart Corrections ---
-            if (corrected.Length >= 11 && corrected.Length <= 17)
+            if (corrected.Length >= 11 && corrected.Length <= 25)
             {
                 char[] chars = corrected.ToCharArray();
                 
@@ -425,7 +425,7 @@ namespace VehicleVisionOCR.OCR.Tesseract
             // 1. Standard Regex pass on lines (prevent merging different lines into one giant false-positive string)
             var lines = rawText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             var barcodeRegex = new Regex(@"[A-Z0-9]{12,25}", RegexOptions.IgnoreCase);
-            var exactVinRegex = new Regex(@"([A-Z0-9]{11,13}\d{4,6})", RegexOptions.IgnoreCase);
+            var exactVinRegex = new Regex(@"([A-Z0-9]{11,13}\d{4,9})", RegexOptions.IgnoreCase);
 
             foreach (var line in lines)
             {
@@ -546,6 +546,14 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     cand.Score -= 200;
                 }
 
+                // Barcode Noise Filter: Real VINs have high entropy (many different letters and numbers).
+                // False barcode reads like IRITARRAEEETERIITE only have a few unique characters repeating.
+                int uniqueCharsCount = cand.Text.Distinct().Count();
+                if (cand.Text.Length >= 14 && uniqueCharsCount < 7)
+                {
+                    cand.Score -= 300; // Heavy penalty for repetitive noise
+                }
+
                 // Forbidden words (heavy penalty to prevent header lines from winning)
                 if (cand.OriginalText.Contains("FRAME") || cand.OriginalText.Contains("NO") || cand.OriginalText.Contains("DATE"))
                 {
@@ -635,7 +643,8 @@ namespace VehicleVisionOCR.OCR.Tesseract
                 fields.Add(new OcrField { Key = "Color", Value = extractedColor, Confidence = new OcrConfidence { Percentage = 80.0 } });
             }
 
-            var modelRegex = new Regex(@"\b(CBF?\d+[A-Z]*|Activa\w*|Dio\w*)\b", RegexOptions.IgnoreCase);
+            // Fixed Model Regex to support alphanumeric suffixes (e.g. CBF170S6 instead of failing on the 6)
+            var modelRegex = new Regex(@"\b(CBF?\d+[A-Z0-9]*|Activa\w*|Dio\w*)\b", RegexOptions.IgnoreCase);
             var modelMatch = modelRegex.Match(rawText);
 
             if (modelMatch.Success)

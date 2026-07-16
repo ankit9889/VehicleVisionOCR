@@ -11,6 +11,7 @@ The system is divided into three main apps and a core scanner framework.
 4. [[Scanner System]]: A plugin-based hardware interface for Zebra barcode scanners and Mobile Web Cameras.
 5. [[Troubleshooting]]: Common issues, API 500 errors, database resets, and network connectivity debugging.
 6. [[OCR Engine Algorithms]]: Detailed breakdown of the Computer Vision (OpenCV) algorithms, MinRGB preprocessing, dynamic projection splitting, and Tesseract optimization logic used in the extraction pipeline.
+7. [[Features and Logic]]: Comprehensive guide to the core features of the system, including Mobile/Hardware scanner logic, Auto-Deskew logic, and Offline Queue workflows.
 
 
 ## ⚙️ How It Works

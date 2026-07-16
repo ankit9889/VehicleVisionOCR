@@ -94,4 +94,4 @@ Uses an `IColorRepository` to compare the raw text against known active vehicle 
 *   **Matching Modes**: Checks for exact matches, token-based partial matches (e.g. `LUNAR METALLIC` -> `LUNAR SILVER METALLIC`), and standard fuzzy matches.
 
 ### 4. Explainable Domain Models
-Every correction results in a rich `CorrectionResult` containing `OriginalText`, `CorrectedText`, `ConfidenceLevel`, and `AppliedRules`. If the engine is unsure, it gracefully returns the raw value unchanged (`Passthrough` mode) instead of hallucinating data.
+Every correction results in a rich `CorrectionResult` containing `OriginalText`, `CorrectedText`, `ConfidenceLevel`, and `AppliedRules`. If the engine is unsure, it gracefully returns the raw value unchanged (`Passthrough` mode) instead of hallucinating data..

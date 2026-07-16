@@ -50,11 +50,27 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Strategies
             if (string.IsNullOrWhiteSpace(rawText))
                 return CreateFailedResult(rawText, "Empty text");
 
-            // 1. Universal Normalization
-            var (baseCandidate, universalRules) = _normalizer.NormalizeUniversalRules(rawText);
+            // Split ensemble OCR inputs (pipe-separated)
+            var rawInputs = rawText.Split('|', System.StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).Distinct().ToList();
+            if (!rawInputs.Any())
+                return CreateFailedResult(rawText, "Empty text after split");
 
-            // 2. Generate Candidate Pool
-            var candidates = await _candidateGenerator.GenerateCandidatesAsync(baseCandidate);
+            var allCandidates = new System.Collections.Generic.List<VehicleVisionOCR.Backend.Services.OcrCorrection.Models.CandidateScore>();
+            var allUniversalRules = new System.Collections.Generic.List<string>();
+
+            // 1. Process every ensemble candidate
+            foreach (var input in rawInputs)
+            {
+                var (baseCandidate, universalRules) = _normalizer.NormalizeUniversalRules(input);
+                allUniversalRules.AddRange(universalRules);
+                
+                // 2. Generate Candidate Pool for this specific OCR variant
+                var pool = await _candidateGenerator.GenerateCandidatesAsync(baseCandidate);
+                allCandidates.AddRange(pool);
+            }
+
+            // Deduplicate candidates to prevent duplicate scoring
+            var candidates = allCandidates.GroupBy(c => c.Candidate).Select(g => g.First()).ToList();
 
             // 3. Apply structural normalizations to all candidates
             foreach (var c in candidates)
@@ -71,11 +87,12 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Strategies
                 return (await _wmiRepository.GetActiveWmiPrefixesAsync()).ToList();
             });
 
-            // 4. Score all candidates
+            // 4. Score all candidates across the entire ensemble
             var scoredCandidates = candidates.Select(c => new
             {
                 Candidate = c.Candidate,
-                Rules = universalRules.Concat(c.Rules).ToList(),
+                Rules = allUniversalRules.Distinct().Concat(c.Rules).ToList(),
+                // Use the original ensemble raw string for scoring so OCR match penalties apply correctly
                 Score = _scorer.ScoreCandidate(c, rawText, ocrConfidence, knownWmis)
             }).OrderByDescending(x => x.Score).ToList();
 

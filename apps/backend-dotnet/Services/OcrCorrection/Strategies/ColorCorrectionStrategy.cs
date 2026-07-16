@@ -12,7 +12,7 @@ using VehicleVisionOCR.Backend.Services.OcrCorrection.Models;
 
 namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Strategies
 {
-    public class ColorCorrectionStrategy : IOcrCorrectionStrategy
+    public partial class ColorCorrectionStrategy : IOcrCorrectionStrategy
     {
         private readonly IColorRepository _colorRepository;
         private readonly IMemoryCache _cache;
@@ -22,6 +22,9 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Strategies
         {
             {'0', 'O'}, {'1', 'I'}, {'5', 'S'}, {'8', 'B'}, {'2', 'Z'}
         };
+
+        [GeneratedRegex(@"[^A-Z0-9\s]")]
+        private static partial Regex NonAlphaNumericRegex();
 
         public TargetFieldType FieldType => TargetFieldType.Color;
 
@@ -103,7 +106,7 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Strategies
         private string Normalize(string text, List<string> rules)
         {
             string norm = text.Trim().ToUpperInvariant();
-            norm = Regex.Replace(norm, @"[^A-Z0-9\s]", ""); 
+            norm = NonAlphaNumericRegex().Replace(norm, ""); 
 
             char[] chars = norm.ToCharArray();
             bool appliedConfusion = false;
@@ -120,7 +123,7 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Strategies
             return new string(chars);
         }
 
-        private (string? match, double score, string matchType) FindBestMatch(string normalizedText, List<string> activeColors)
+        private static (string? match, double score, string matchType) FindBestMatch(string normalizedText, List<string> activeColors)
         {
             if (activeColors == null || !activeColors.Any()) return (null, 0, "None");
 

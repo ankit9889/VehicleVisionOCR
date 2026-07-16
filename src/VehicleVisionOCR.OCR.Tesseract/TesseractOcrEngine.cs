@@ -126,69 +126,82 @@ namespace VehicleVisionOCR.OCR.Tesseract
                         {
                             _sharedEngine = new TesseractEngine(_tessDataPath, _language, EngineMode.Default);
                         }
-                        
-                        foreach (var kvp in preprocessedMats)
-                        {
-                            var mat = kvp.Value;
-                            var passName = kvp.Key;
-                            
-                            byte[] matBytes = mat.ToBytes(".png");
-                            using var pix = Pix.LoadFromMemory(matBytes);
-                            
-                            TesseractEngine engineToUse = _sharedEngine;
-                            bool disposeEngine = false;
 
-                            if (isStructuredCrop)
-                            {
-                                // Create an isolated engine for VIN processing with aggressive whitelist
-                                engineToUse = new TesseractEngine(_tessDataPath, _language, EngineMode.LstmOnly);
-                                engineToUse.SetVariable("tessedit_char_whitelist", "0123456789ABCDEFGHJKLMNPRSTUVWXYZ ");
-                                disposeEngine = true;
-                            }
+                        TesseractEngine engineToUse = _sharedEngine;
+                        bool disposeEngine = false;
 
-                            // Use SingleLine for structured crops (VIN) as it's a single continuous string
-                            PageSegMode psm = isStructuredCrop ? PageSegMode.SingleLine : (passName == "OriginalGray" ? PageSegMode.Auto : PageSegMode.SparseText);
-                            using var page = engineToUse.Process(pix, psm);
-                        
-                        string text = page.GetText();
-                        allRawTexts.Add(text);
-                        
-                        var detectedTexts = new List<DetectedText>();
-                        using (var iter = page.GetIterator())
+                        if (isStructuredCrop)
                         {
-                            iter.Begin();
-                            do
+                            // Create an isolated engine ONCE for VIN processing with aggressive whitelist
+                            engineToUse = new TesseractEngine(_tessDataPath, _language, EngineMode.LstmOnly);
+                            engineToUse.SetVariable("tessedit_char_whitelist", "0123456789ABCDEFGHJKLMNPRSTUVWXYZ ");
+                            disposeEngine = true;
+                        }
+
+                        try
+                        {
+                            foreach (var kvp in preprocessedMats)
                             {
-                                var word = iter.GetText(PageIteratorLevel.Word);
-                                if (!string.IsNullOrWhiteSpace(word) && iter.TryGetBoundingBox(PageIteratorLevel.Word, out global::Tesseract.Rect bounds))
+                                var mat = kvp.Value;
+                                var passName = kvp.Key;
+                                
+                                byte[] matBytes = mat.ToBytes(".png");
+                                using var pix = Pix.LoadFromMemory(matBytes);
+                                
+                                // Implement PSM Ensemble (PSM 7 and PSM 13) for structured crops
+                                PageSegMode[] psms = isStructuredCrop 
+                                    ? new[] { PageSegMode.SingleBlock, PageSegMode.Auto, PageSegMode.SingleLine, PageSegMode.RawLine } 
+                                    : new[] { (passName == "OriginalGray" ? PageSegMode.Auto : PageSegMode.SparseText) };
+
+                                foreach (var psm in psms)
                                 {
-                                    detectedTexts.Add(new DetectedText
+                                    using var page = engineToUse.Process(pix, psm);
+                                    
+                                    string text = page.GetText();
+                                    allRawTexts.Add(text);
+                                    
+                                    var detectedTexts = new List<DetectedText>();
+                                    using (var iter = page.GetIterator())
                                     {
-                                        Text = word,
-                                        X = bounds.X1,
-                                        Y = bounds.Y1,
-                                        Width = bounds.Width,
-                                        Height = bounds.Height,
-                                        Confidence = new OcrConfidence { Percentage = iter.GetConfidence(PageIteratorLevel.Word) * 100 }
-                                    });
-                                }
-                            } while (iter.Next(PageIteratorLevel.Word));
-                        }
+                                        iter.Begin();
+                                        do
+                                        {
+                                            var word = iter.GetText(PageIteratorLevel.Word);
+                                            if (!string.IsNullOrWhiteSpace(word) && iter.TryGetBoundingBox(PageIteratorLevel.Word, out global::Tesseract.Rect bounds))
+                                            {
+                                                detectedTexts.Add(new DetectedText
+                                                {
+                                                    Text = word,
+                                                    X = bounds.X1,
+                                                    Y = bounds.Y1,
+                                                    Width = bounds.Width,
+                                                    Height = bounds.Height,
+                                                    Confidence = new OcrConfidence { Percentage = iter.GetConfidence(PageIteratorLevel.Word) * 100 }
+                                                });
+                                            }
+                                        } while (iter.Next(PageIteratorLevel.Word));
+                                    }
 
-                        // Extract candidates from this pass
-                        ExtractCandidatesFromPass(text, detectedTexts, allCandidates, passName);
-                        
-                        mat.Dispose();
-                        if (disposeEngine)
-                        {
-                            engineToUse.Dispose();
+                                    // Extract candidates from this pass
+                                    ExtractCandidatesFromPass(text, detectedTexts, allCandidates, $"{passName}_{psm}");
+                                }
+                            
+                            mat.Dispose();
+                            
+                        } // close foreach
                         }
-                        
-                    } // close foreach
+                        finally
+                        {
+                            if (disposeEngine && engineToUse != null)
+                            {
+                                engineToUse.Dispose();
+                            }
+                        }
                     } // close lock
 
-                    // 5. Candidate Scoring
-                    var bestCandidate = ScoreAndSelectBestCandidate(allCandidates, decodedBarcode);
+                    // 5. Candidate Scoring (Get top ensemble candidates)
+                    var topCandidates = ScoreAndSelectTopCandidates(allCandidates, decodedBarcode, topN: 5);
+                    var bestCandidate = topCandidates.FirstOrDefault();
                     
                     var result = new OcrResultData
                     {
@@ -209,13 +222,16 @@ namespace VehicleVisionOCR.OCR.Tesseract
                         // Lowered threshold to 70% so we don't return NULL for generic 15-char barcodes
                         if (finalConfidence >= 70.0)
                         {
+                            // Output ensemble of candidates joined by pipe for the verification layer
+                            string ensembleValue = string.Join("|", topCandidates.Select(c => c.Text).Distinct());
+
                             result.ExtractedFields.Add(new OcrField 
                             { 
                                 Key = "VIN", 
-                                Value = bestCandidate.Text,
+                                Value = ensembleValue,
                                 Confidence = new OcrConfidence { Percentage = finalConfidence }
                             });
-                            // Keep backward compatibility for frontend
+                            // Keep backward compatibility for frontend (use the best one for UI display if needed)
                             result.ExtractedFields.Add(new OcrField { Key = "Barcode", Value = bestCandidate.Text, Confidence = new OcrConfidence { Percentage = finalConfidence } });
                         }
                         else
@@ -384,13 +400,13 @@ namespace VehicleVisionOCR.OCR.Tesseract
 
             // 8. Thickened Text Pass (Erosion thickens dark pixels/text on a light background)
             var thickenedMat = new Mat();
-            var thickenKernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(2, 2));
+            using var thickenKernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(2, 2));
             Cv2.Erode(gray, thickenedMat, thickenKernel);
             dict.Add("ErodedGray", thickenedMat);
             
             // 8.5 Thinned Text Pass (Dilation thins dark pixels on a light background) - Fixes bleeding ink (6 vs G)
             var thinnedMat = new Mat();
-            var thinKernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(2, 2));
+            using var thinKernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(2, 2));
             Cv2.Dilate(gray, thinnedMat, thinKernel);
             // Apply Otsu to the thinned image to ensure sharp edges
             var thinnedOtsu = new Mat();
@@ -568,7 +584,7 @@ namespace VehicleVisionOCR.OCR.Tesseract
             }
         }
 
-        private VinCandidate ScoreAndSelectBestCandidate(List<VinCandidate> candidates, string decodedBarcode)
+        private List<VinCandidate> ScoreAndSelectTopCandidates(List<VinCandidate> candidates, string decodedBarcode, int topN)
         {
             // Calculate consensus frequencies
             var frequencies = candidates.GroupBy(c => c.Text).ToDictionary(g => g.Key, g => g.Count());
@@ -666,7 +682,7 @@ namespace VehicleVisionOCR.OCR.Tesseract
                 }
             }
 
-            return candidates.OrderByDescending(c => c.Score).FirstOrDefault(c => c.Score > 0);
+            return candidates.OrderByDescending(c => c.Score).Where(c => c.Score > 0).GroupBy(c => c.Text).Select(g => g.First()).Take(topN).ToList();
         }
 
         private void ExtractColorAndModel(string rawText, List<OcrField> fields)

@@ -8,15 +8,20 @@ namespace VehicleVisionOCR.Backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class OcrController : ControllerBase
+    public partial class OcrController : ControllerBase
     {
         private readonly IOcrManager _ocrManager;
         private readonly ILogger<OcrController> _logger;
+        private readonly VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.IOcrCorrectionCoordinator _correctionCoordinator;
 
-        public OcrController(IOcrManager ocrManager, ILogger<OcrController> logger)
+        [System.Text.RegularExpressions.GeneratedRegex(@"\s+")]
+        private static partial System.Text.RegularExpressions.Regex WhitespaceRegex();
+
+        public OcrController(IOcrManager ocrManager, ILogger<OcrController> logger, VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.IOcrCorrectionCoordinator correctionCoordinator)
         {
             _ocrManager = ocrManager;
             _logger = logger;
+            _correctionCoordinator = correctionCoordinator;
         }
 
         [HttpPost("process")]
@@ -33,29 +38,47 @@ namespace VehicleVisionOCR.Backend.Controllers
                 var engineType = request.UsePositionBasedExtraction ? VehicleVisionOCR.OCR.Core.Enums.OcrEngineType.PositionBased : VehicleVisionOCR.OCR.Core.Enums.OcrEngineType.Tesseract;
                 var result = await _ocrManager.ProcessAsync(ocrRequest, engineType);
                 
-                // Attempt dynamic color matching from Database for UI testing
-                if (result.Status == VehicleVisionOCR.OCR.Core.Enums.OcrStatus.Success && result.Result != null && !string.IsNullOrEmpty(result.Result.RawText))
+                // Apply correction to the extracted fields
+                if (result.Status == VehicleVisionOCR.OCR.Core.Enums.OcrStatus.Success && result.Result != null)
                 {
-                    using var scope = HttpContext.RequestServices.CreateScope();
-                    var dbContext = scope.ServiceProvider.GetRequiredService<VehicleVisionOCR.Infrastructure.Persistence.ApplicationDbContext>();
-                    var dbColors = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(System.Linq.Queryable.Select(dbContext.VehicleColors, c => c.Name));
-                    
-                    var rawTextUpper = result.Result.RawText.ToUpperInvariant().Replace("\n", " ").Replace("\r", " ");
-                    rawTextUpper = System.Text.RegularExpressions.Regex.Replace(rawTextUpper, @"\s+", " ");
-                    foreach (var dbColor in System.Linq.Enumerable.OrderByDescending(dbColors.Where(c => !string.IsNullOrEmpty(c)), c => c.Length))
+                    var vinField = result.Result.ExtractedFields.Find(f => f.Key == "VIN");
+                    if (vinField != null)
                     {
-                        if (VehicleVisionOCR.Backend.Helpers.FuzzyMatcher.IsFuzzyMatch(rawTextUpper, dbColor.ToUpperInvariant()))
+                        var vinResult = await _correctionCoordinator.ProcessFieldAsync(
+                            VehicleVisionOCR.Backend.Services.OcrCorrection.Enums.TargetFieldType.VIN, 
+                            vinField.Value, 
+                            result.Result.OverallConfidence.Percentage);
+                            
+                        if (vinResult.IsValid)
                         {
-                            var colorField = result.Result.ExtractedFields.Find(f => f.Key.Equals("Color", StringComparison.OrdinalIgnoreCase));
-                            if (colorField != null)
+                            vinField.Value = vinResult.CorrectedText;
+                        }
+                    }
+
+                    // Attempt dynamic color matching from Database for UI testing
+                    if (!string.IsNullOrEmpty(result.Result.RawText))
+                    {
+                        using var scope = HttpContext.RequestServices.CreateScope();
+                        var dbContext = scope.ServiceProvider.GetRequiredService<VehicleVisionOCR.Infrastructure.Persistence.ApplicationDbContext>();
+                        var dbColors = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(System.Linq.Queryable.Select(dbContext.VehicleColors, c => c.Name));
+                        
+                        var rawTextUpper = result.Result.RawText.ToUpperInvariant().Replace("\n", " ").Replace("\r", " ");
+                        rawTextUpper = WhitespaceRegex().Replace(rawTextUpper, " ");
+                        foreach (var dbColor in System.Linq.Enumerable.OrderByDescending(dbColors.Where(c => !string.IsNullOrEmpty(c)), c => c.Length))
+                        {
+                            if (VehicleVisionOCR.Backend.Helpers.FuzzyMatcher.IsFuzzyMatch(rawTextUpper, dbColor.ToUpperInvariant()))
                             {
-                                colorField.Value = dbColor;
+                                var colorField = result.Result.ExtractedFields.Find(f => f.Key.Equals("Color", StringComparison.OrdinalIgnoreCase));
+                                if (colorField != null)
+                                {
+                                    colorField.Value = dbColor;
+                                }
+                                else
+                                {
+                                    result.Result.ExtractedFields.Add(new VehicleVisionOCR.OCR.Core.Models.OcrField { Key = "Color", Value = dbColor });
+                                }
+                                break;
                             }
-                            else
-                            {
-                                result.Result.ExtractedFields.Add(new VehicleVisionOCR.OCR.Core.Models.OcrField { Key = "Color", Value = dbColor });
-                            }
-                            break;
                         }
                     }
                 }

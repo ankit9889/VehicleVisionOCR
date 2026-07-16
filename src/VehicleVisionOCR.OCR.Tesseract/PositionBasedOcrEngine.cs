@@ -143,12 +143,16 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     int bottomY = Math.Min(height - 10, barcodeBottomY + 5); // 5px padding below barcode
                     int bottomHeight = height - bottomY;
 
-                    using var topMat = new Mat(srcMat, new OpenCvSharp.Rect(0, 0, width, topHeight));
+                    // Apply a small horizontal margin to remove border artifacts (which cause extra '0' or '1')
+                    int hMargin = Math.Min(15, width / 20); 
+                    int safeWidth = width - (hMargin * 2);
+
+                    using var topMat = new Mat(srcMat, new OpenCvSharp.Rect(hMargin, 0, safeWidth, topHeight));
                     
                     // 2. Dynamic Vertical Split for Bottom Text
                     // We must find the gap between the left and right columns to avoid slicing words like "GRANITE"
                     int splitX = width / 2; // Fallback
-                    using var bottomMatTemp = new Mat(srcMat, new OpenCvSharp.Rect(0, bottomY, width, bottomHeight));
+                    using var bottomMatTemp = new Mat(srcMat, new OpenCvSharp.Rect(hMargin, bottomY, safeWidth, bottomHeight));
                     
                     using (var bottomMinRGB = new Mat())
                     using (var bottomBinary = new Mat())
@@ -166,11 +170,11 @@ namespace VehicleVisionOCR.OCR.Tesseract
                             // Reduce to a single row containing the sum of white pixels for each column
                             Cv2.Reduce(bottomBinary, colSums, ReduceDimension.Row, ReduceTypes.Sum, MatType.CV_32S);
                             
-                            int minSearchX = (int)(width * 0.25);
-                            int maxSearchX = (int)(width * 0.75);
+                            int minSearchX = (int)(safeWidth * 0.25);
+                            int maxSearchX = (int)(safeWidth * 0.75);
                             int maxGapWidth = 0;
                             int currentGapStart = -1;
-                            int bestGapCenter = splitX;
+                            int bestGapCenter = splitX - hMargin;
                             int noiseThreshold = 255 * 3; // Allow up to 3 noise pixels per column
 
                             for (int x = minSearchX; x < maxSearchX; x++)
@@ -205,16 +209,16 @@ namespace VehicleVisionOCR.OCR.Tesseract
                                 }
                             }
                             
-                            if (maxGapWidth > width * 0.02) // At least 2% of image width gap
+                            if (maxGapWidth > safeWidth * 0.02) // At least 2% of image width gap
                             {
-                                splitX = bestGapCenter;
+                                splitX = bestGapCenter + hMargin;
                                 _logger.LogInformation($"Dynamically found vertical column gap for split at X:{splitX} (Gap Width: {maxGapWidth})");
                             }
                         }
                     }
 
-                    using var bottomLeftMat = new Mat(srcMat, new OpenCvSharp.Rect(0, bottomY, splitX, bottomHeight));
-                    using var bottomRightMat = new Mat(srcMat, new OpenCvSharp.Rect(splitX, bottomY, width - splitX, bottomHeight));
+                    using var bottomLeftMat = new Mat(srcMat, new OpenCvSharp.Rect(hMargin, bottomY, splitX - hMargin, bottomHeight));
+                    using var bottomRightMat = new Mat(srcMat, new OpenCvSharp.Rect(splitX, bottomY, width - splitX - hMargin, bottomHeight));
 
                     // Use PNG to prevent JPEG compression artifacts from ruining text edges
                     Cv2.ImEncode(".png", topMat, out byte[] topBytes);

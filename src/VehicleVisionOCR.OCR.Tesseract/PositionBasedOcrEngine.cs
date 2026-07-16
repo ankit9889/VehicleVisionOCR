@@ -138,15 +138,83 @@ namespace VehicleVisionOCR.OCR.Tesseract
                         }
                     }
 
-                    // Define precise crop regions
+                    // Define precise horizontal crop regions
                     int topHeight = Math.Max(10, barcodeTopY - 5); // 5px padding above barcode
                     int bottomY = Math.Min(height - 10, barcodeBottomY + 5); // 5px padding below barcode
                     int bottomHeight = height - bottomY;
-                    int halfWidth = width / 2;
 
                     using var topMat = new Mat(srcMat, new OpenCvSharp.Rect(0, 0, width, topHeight));
-                    using var bottomLeftMat = new Mat(srcMat, new OpenCvSharp.Rect(0, bottomY, halfWidth, bottomHeight));
-                    using var bottomRightMat = new Mat(srcMat, new OpenCvSharp.Rect(halfWidth, bottomY, width - halfWidth, bottomHeight));
+                    
+                    // 2. Dynamic Vertical Split for Bottom Text
+                    // We must find the gap between the left and right columns to avoid slicing words like "GRANITE"
+                    int splitX = width / 2; // Fallback
+                    using var bottomMatTemp = new Mat(srcMat, new OpenCvSharp.Rect(0, bottomY, width, bottomHeight));
+                    
+                    using (var bottomMinRGB = new Mat())
+                    using (var bottomBinary = new Mat())
+                    using (var colSums = new Mat())
+                    {
+                        var bottomChannels = Cv2.Split(bottomMatTemp);
+                        if (bottomChannels.Length == 3)
+                        {
+                            using var minBG = new Mat();
+                            Cv2.Min(bottomChannels[0], bottomChannels[1], minBG);
+                            Cv2.Min(minBG, bottomChannels[2], bottomMinRGB);
+                            
+                            Cv2.Threshold(bottomMinRGB, bottomBinary, 0, 255, ThresholdTypes.BinaryInv | ThresholdTypes.Otsu);
+                            
+                            // Reduce to a single row containing the sum of white pixels for each column
+                            Cv2.Reduce(bottomBinary, colSums, ReduceDimension.Row, ReduceTypes.Sum, MatType.CV_32S);
+                            
+                            int minSearchX = (int)(width * 0.25);
+                            int maxSearchX = (int)(width * 0.75);
+                            int maxGapWidth = 0;
+                            int currentGapStart = -1;
+                            int bestGapCenter = splitX;
+                            int noiseThreshold = 255 * 3; // Allow up to 3 noise pixels per column
+
+                            for (int x = minSearchX; x < maxSearchX; x++)
+                            {
+                                int sum = colSums.At<int>(0, x);
+                                if (sum <= noiseThreshold)
+                                {
+                                    if (currentGapStart == -1) currentGapStart = x;
+                                }
+                                else
+                                {
+                                    if (currentGapStart != -1)
+                                    {
+                                        int gapWidth = x - currentGapStart;
+                                        if (gapWidth > maxGapWidth)
+                                        {
+                                            maxGapWidth = gapWidth;
+                                            bestGapCenter = currentGapStart + (gapWidth / 2);
+                                        }
+                                        currentGapStart = -1;
+                                    }
+                                }
+                            }
+                            
+                            if (currentGapStart != -1)
+                            {
+                                int gapWidth = maxSearchX - currentGapStart;
+                                if (gapWidth > maxGapWidth)
+                                {
+                                    maxGapWidth = gapWidth;
+                                    bestGapCenter = currentGapStart + (gapWidth / 2);
+                                }
+                            }
+                            
+                            if (maxGapWidth > width * 0.02) // At least 2% of image width gap
+                            {
+                                splitX = bestGapCenter;
+                                _logger.LogInformation($"Dynamically found vertical column gap for split at X:{splitX} (Gap Width: {maxGapWidth})");
+                            }
+                        }
+                    }
+
+                    using var bottomLeftMat = new Mat(srcMat, new OpenCvSharp.Rect(0, bottomY, splitX, bottomHeight));
+                    using var bottomRightMat = new Mat(srcMat, new OpenCvSharp.Rect(splitX, bottomY, width - splitX, bottomHeight));
 
                     // Use PNG to prevent JPEG compression artifacts from ruining text edges
                     Cv2.ImEncode(".png", topMat, out byte[] topBytes);

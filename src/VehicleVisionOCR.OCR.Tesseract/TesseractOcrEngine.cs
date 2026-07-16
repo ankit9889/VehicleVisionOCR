@@ -366,14 +366,18 @@ namespace VehicleVisionOCR.OCR.Tesseract
             Cv2.Erode(gray, thickenedMat, thickenKernel);
             dict.Add("ErodedGray", thickenedMat);
             
-            // 9. Blue Channel Pass (Best for Red Text on White Background)
+            // 9. MinRGB Pass (Ultimate contrast for ANY colored text on white background)
             var channels = Cv2.Split(srcMat);
-            if (channels.Length > 0)
+            if (channels.Length == 3)
             {
-                var blueChannel = channels[0]; // BGR format, 0 is Blue
-                var blueOtsuMat = new Mat();
-                Cv2.Threshold(blueChannel, blueOtsuMat, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
-                dict.Add("BlueChannelOtsu", blueOtsuMat);
+                var minBG = new Mat();
+                Cv2.Min(channels[0], channels[1], minBG);
+                var minRGB = new Mat();
+                Cv2.Min(minBG, channels[2], minRGB);
+                
+                var minRgbOtsuMat = new Mat();
+                Cv2.Threshold(minRGB, minRgbOtsuMat, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
+                dict.Add("MinRgbOtsu", minRgbOtsuMat);
             }
             
             return dict;

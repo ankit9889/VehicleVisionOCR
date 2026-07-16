@@ -64,8 +64,9 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     int width = srcMat.Cols;
 
                     // 1. Split Image based on Position
-                    int topHeight = (int)(height * 0.35); // Top 35% for VIN
-                    int bottomHeight = (int)(height * 0.40); // Bottom 40%
+                    // Adjusted to completely avoid the barcode (Barcode is usually 30% to 70%)
+                    int topHeight = (int)(height * 0.30); // Top 30% for VIN
+                    int bottomHeight = (int)(height * 0.25); // Bottom 25% for Model/Color
                     int bottomY = height - bottomHeight;
                     int halfWidth = width / 2;
 
@@ -73,10 +74,10 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     using var bottomLeftMat = new Mat(srcMat, new OpenCvSharp.Rect(0, bottomY, halfWidth, bottomHeight));
                     using var bottomRightMat = new Mat(srcMat, new OpenCvSharp.Rect(halfWidth, bottomY, width - halfWidth, bottomHeight));
 
-                    Cv2.ImEncode(".jpg", topMat, out byte[] topBytes);
+                    // Use PNG to prevent JPEG compression artifacts from ruining text edges
+                    Cv2.ImEncode(".png", topMat, out byte[] topBytes);
                     
                     // 2. Process TOP part for VIN ONLY
-                    // We can safely use _baseEngine because its regex consensus is highly optimized for VINs
                     var topResult = _baseEngine.ProcessImageAsync(topBytes).GetAwaiter().GetResult();
                     var vinField = topResult.ExtractedFields.FirstOrDefault(f => f.Key == "VIN");
                     if (vinField != null)
@@ -89,8 +90,6 @@ namespace VehicleVisionOCR.OCR.Tesseract
 
                     // 3. Process BOTTOM LEFT for Model EXACTLY
                     string modelText = RunSimpleOcr(bottomLeftMat);
-                    // The Model text might have multiple lines (e.g. CB190XS ID \n PB417). 
-                    // Let's just take the first line as Model
                     string model = modelText.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim() ?? "";
                     
                     if (!string.IsNullOrEmpty(model))
@@ -100,12 +99,9 @@ namespace VehicleVisionOCR.OCR.Tesseract
 
                     // 4. Process BOTTOM RIGHT for Color EXACTLY
                     string colorText = RunSimpleOcr(bottomRightMat);
-                    // The Color text might have multiple lines (e.g. K1LJ D10 ID \n RACIING GREEN).
-                    // Usually color is the last line or we take the whole thing
                     var colorLines = colorText.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(l => l.Trim()).ToList();
                     string color = colorLines.LastOrDefault(l => l.Length > 3) ?? colorLines.LastOrDefault() ?? "";
                     
-                    // Clean up any stray single characters (like the 'G' from noise)
                     color = Regex.Replace(color, @"\s+[A-Z]\s*$", "");
                     
                     if (!string.IsNullOrEmpty(color))
@@ -131,48 +127,59 @@ namespace VehicleVisionOCR.OCR.Tesseract
             try
             {
                 using var engine = new TesseractEngine(_tessDataPath, "eng", EngineMode.LstmOnly);
+                // For exact cropped regions, treat it as a single block of text
                 engine.DefaultPageSegMode = PageSegMode.SingleBlock;
                 
                 string bestText = "";
                 float bestConfidence = -1f;
 
-                // Pass 1: Grayscale + Resize + Otsu
+                // Pass 1: MinRGB (Perfect for ANY colored text on white background)
                 using (var pass1 = new Mat())
                 {
-                    using var gray = new Mat();
-                    Cv2.CvtColor(mat, gray, ColorConversionCodes.BGR2GRAY);
-                    using var enlarged = new Mat();
-                    Cv2.Resize(gray, enlarged, new OpenCvSharp.Size(gray.Width * 2, gray.Height * 2), 0, 0, InterpolationFlags.Cubic);
-                    Cv2.Threshold(enlarged, pass1, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
-                    
-                    var (text, conf) = ExtractTextAndConfidence(engine, pass1);
-                    if (conf > bestConfidence) { bestConfidence = conf; bestText = text; }
-                }
-
-                // Pass 2: Blue Channel + Barcode Removal (Best for Red Text + Barcode interference)
-                using (var pass2 = new Mat())
-                {
                     var channels = Cv2.Split(mat);
-                    using var blueChannel = channels.Length > 0 ? channels[0] : new Mat(); // OpenCV uses BGR
-                    
-                    if (!blueChannel.Empty())
+                    if (channels.Length == 3)
                     {
+                        using var minBG = new Mat();
+                        Cv2.Min(channels[0], channels[1], minBG);
+                        Cv2.Min(minBG, channels[2], pass1); // pass1 is now Min(B, G, R)
+                        
                         using var enlarged = new Mat();
-                        Cv2.Resize(blueChannel, enlarged, new OpenCvSharp.Size(blueChannel.Width * 2, blueChannel.Height * 2), 0, 0, InterpolationFlags.Cubic);
+                        Cv2.Resize(pass1, enlarged, new OpenCvSharp.Size(pass1.Width * 2, pass1.Height * 2), 0, 0, InterpolationFlags.Cubic);
                         
                         using var binary = new Mat();
                         Cv2.Threshold(enlarged, binary, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
                         
-                        // Barcode removal: horizontal open morphology
-                        var kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(15, 1)); // Wider kernel
-                        Cv2.MorphologyEx(binary, pass2, MorphTypes.Open, kernel);
-                        
-                        var (text, conf) = ExtractTextAndConfidence(engine, pass2);
+                        var (text, conf) = ExtractTextAndConfidence(engine, binary);
                         if (conf > bestConfidence) { bestConfidence = conf; bestText = text; }
                     }
                 }
 
-                // Pass 3: Blur + Otsu (Helps with noisy background)
+                // Pass 2: MinRGB + Morphological Barcode Removal (In case crop still catches barcode edges)
+                using (var pass2 = new Mat())
+                {
+                    var channels = Cv2.Split(mat);
+                    if (channels.Length == 3)
+                    {
+                        using var minBG = new Mat();
+                        Cv2.Min(channels[0], channels[1], minBG);
+                        Cv2.Min(minBG, channels[2], pass2); 
+                        
+                        using var enlarged = new Mat();
+                        Cv2.Resize(pass2, enlarged, new OpenCvSharp.Size(pass2.Width * 2, pass2.Height * 2), 0, 0, InterpolationFlags.Cubic);
+                        
+                        using var binary = new Mat();
+                        Cv2.Threshold(enlarged, binary, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
+                        
+                        // To remove black vertical lines on white background, we use Close (Dilate then Erode)
+                        var kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(15, 1));
+                        Cv2.MorphologyEx(binary, binary, MorphTypes.Close, kernel);
+                        
+                        var (text, conf) = ExtractTextAndConfidence(engine, binary);
+                        if (conf > bestConfidence) { bestConfidence = conf; bestText = text; }
+                    }
+                }
+
+                // Pass 3: Standard Grayscale + Blur + Otsu (Fallback)
                 using (var pass3 = new Mat())
                 {
                     using var gray = new Mat();

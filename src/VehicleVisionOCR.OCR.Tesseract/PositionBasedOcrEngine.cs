@@ -224,7 +224,17 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     Cv2.ImEncode(".png", topMat, out byte[] topBytes);
                     
                     // 2. Process TOP part for VIN ONLY
-                    var topResult = _baseEngine.ProcessImageAsync(topBytes).GetAwaiter().GetResult();
+                    // We cast to TesseractOcrEngine to use the overloaded method which prevents SparseText word splitting
+                    OcrResultData topResult;
+                    if (_baseEngine is TesseractOcrEngine tessEngine)
+                    {
+                        topResult = tessEngine.ProcessImageAsync(topBytes, true).GetAwaiter().GetResult();
+                    }
+                    else
+                    {
+                        topResult = _baseEngine.ProcessImageAsync(topBytes).GetAwaiter().GetResult();
+                    }
+
                     var vinField = topResult.ExtractedFields.FirstOrDefault(f => f.Key == "VIN");
                     if (vinField != null)
                     {

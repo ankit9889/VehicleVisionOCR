@@ -129,7 +129,9 @@ namespace VehicleVisionOCR.OCR.Tesseract
                             
                             byte[] matBytes = mat.ToBytes(".png");
                             using var pix = Pix.LoadFromMemory(matBytes);
-                            PageSegMode psm = passName == "OriginalGray" ? PageSegMode.Auto : PageSegMode.SparseText;
+                            
+                            // If isStructuredCrop is true, we force SingleBlock to prevent SparseText from splitting continuous strings
+                            PageSegMode psm = isStructuredCrop ? PageSegMode.SingleBlock : (passName == "OriginalGray" ? PageSegMode.Auto : PageSegMode.SparseText);
                             using var page = _sharedEngine.Process(pix, psm);
                         
                         string text = page.GetText();
@@ -431,7 +433,8 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     .Replace("NESLDS", "NE5LD5")
                     .Replace("NESLD5", "NE5LD5")
                     .Replace("NE5LDS", "NE5LD5")
-                    .Replace("A23D", "A2S3D");
+                    .Replace("A23D", "A2S3D")
+                    .Replace("LBBTC", "LB8TC");
             }
             else
             {

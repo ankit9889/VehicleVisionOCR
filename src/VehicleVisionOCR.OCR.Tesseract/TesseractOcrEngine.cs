@@ -425,9 +425,6 @@ namespace VehicleVisionOCR.OCR.Tesseract
             {
                 // Fallback hardcoded replacements if appsettings is empty
                 corrected = corrected
-                    .Replace("GZAFOZD107", "ME4MC56FG")
-                    .Replace("GZAFOZD1", "ME4MC56FG")
-                    .Replace("GZAFOZ", "ME4MC56FG") 
                     .Replace("GTAO", "GTA0")
                     .Replace("O7", "07")
                     .Replace("NESLDS", "NE5LD5")

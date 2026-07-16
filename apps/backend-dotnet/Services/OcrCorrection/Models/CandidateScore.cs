@@ -22,5 +22,10 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Models
         /// The intermediate score assigned to this candidate before final selection.
         /// </summary>
         public double Score { get; set; }
+
+        /// <summary>
+        /// Number of character substitutions applied from the confusion matrix.
+        /// </summary>
+        public int Substitutions { get; set; } = 0;
     }
 }

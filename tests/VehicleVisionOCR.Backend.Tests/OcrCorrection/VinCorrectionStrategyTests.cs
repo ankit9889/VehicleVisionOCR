@@ -64,8 +64,8 @@ namespace VehicleVisionOCR.Backend.Tests.OcrCorrection
 
             _mockWmiRepo.Setup(r => r.GetActiveWmiPrefixesAsync()).ReturnsAsync(new List<string> { "1HG" });
 
-            _mockScorer.Setup(s => s.ScoreCandidate(validVin, validVin, 95.0, It.IsAny<List<string>>()))
-                       .Returns(95.0);
+            _mockScorer.Setup(s => s.ScoreCandidate(It.IsAny<VehicleVisionOCR.Backend.Services.OcrCorrection.Models.CandidateScore>(), validVin, 95.0, It.IsAny<List<string>>()))
+                .Returns(100.0);
 
             // Act
             var result = await _sut.CorrectAsync(validVin, 95.0);
@@ -73,7 +73,7 @@ namespace VehicleVisionOCR.Backend.Tests.OcrCorrection
             // Assert
             result.IsValid.Should().BeTrue();
             result.CorrectedText.Should().Be(validVin);
-            result.FinalScore.Should().Be(95.0);
+            result.FinalScore.Should().Be(100.0);
             result.ConfidenceLevel.Should().Be(ConfidenceLevel.High);
         }
 
@@ -91,8 +91,8 @@ namespace VehicleVisionOCR.Backend.Tests.OcrCorrection
             _mockNormalizer.Setup(n => n.NormalizeStructuralRules(weakVin))
                            .Returns((weakVin, new List<string>()));
 
-            _mockScorer.Setup(s => s.ScoreCandidate(weakVin, weakVin, 50.0, It.IsAny<List<string>>()))
-                       .Returns(75.0); // Below 80.0
+            _mockScorer.Setup(s => s.ScoreCandidate(It.IsAny<VehicleVisionOCR.Backend.Services.OcrCorrection.Models.CandidateScore>(), weakVin, 50.0, It.IsAny<List<string>>()))
+                .Returns(65.0); // Below 80.0
 
             // Act
             var result = await _sut.CorrectAsync(weakVin, 50.0);

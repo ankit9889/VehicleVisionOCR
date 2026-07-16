@@ -23,7 +23,7 @@ namespace VehicleVisionOCR.Backend.Tests.OcrCorrection
             var wmis = new List<string> { "1HG" };
 
             // Act
-            double score = _sut.ScoreCandidate(validVin, validVin, ocrConfidence, wmis);
+            double score = _sut.ScoreCandidate(new VehicleVisionOCR.Backend.Services.OcrCorrection.Models.CandidateScore { Candidate = validVin }, validVin, ocrConfidence, wmis);
 
             // Assert
             // 36 (confidence) + 30 (pattern) + 30 (check digit) + 5 (WMI) = 101 -> capped at 100
@@ -39,11 +39,11 @@ namespace VehicleVisionOCR.Backend.Tests.OcrCorrection
             var wmis = new List<string> { "1HG" }; // 5
 
             // Act
-            double score = _sut.ScoreCandidate(invalidVin, invalidVin, ocrConfidence, wmis);
+            double score = _sut.ScoreCandidate(new VehicleVisionOCR.Backend.Services.OcrCorrection.Models.CandidateScore { Candidate = invalidVin }, invalidVin, ocrConfidence, wmis);
 
             // Assert
-            // 36 (conf) + 30 (pattern) + 5 (wmi) - 15 (penalty) = 56
-            score.Should().Be(56.0);
+            // 36 (conf) + 30 (pattern) + 5 (wmi) - 20 (penalty) = 51
+            score.Should().Be(51.0);
         }
 
         [Fact]
@@ -55,10 +55,10 @@ namespace VehicleVisionOCR.Backend.Tests.OcrCorrection
             var wmis = new List<string> { "1HG" }; // 0 bonus since 1AG is not in wmis
 
             // Act
-            double score = _sut.ScoreCandidate(validVin, validVin, ocrConfidence, wmis);
+            double score = _sut.ScoreCandidate(new VehicleVisionOCR.Backend.Services.OcrCorrection.Models.CandidateScore { Candidate = validVin }, validVin, ocrConfidence, wmis);
 
             // Assert
-            // 40 (conf) + 30 (pattern) - 15 (check digit penalty) = 55
+            // 40 (conf) + 30 (pattern) - 20 (check digit penalty) = 50
             score.Should().NotBe(0);
             score.Should().BeLessThan(100.0);
         }

@@ -24,44 +24,27 @@ namespace VehicleVisionOCR.Backend.Tests.OcrCorrection
 
             // Assert
             result.Normalized.Should().Be("LB8TC33FMNP88127");
-            result.AppliedRules.Should().BeEmpty();
+            result.AppliedRules.Should().ContainSingle().Which.Contains("Stripped Whitespace/Hyphens");
         }
 
         [Theory]
-        [InlineData("LIOQ", "L100")]
-        [InlineData("lIoQ", "L100")]
-        public void NormalizeUniversalRules_ShouldConvertInvalidLettersToNumbers(string input, string expected)
+        [InlineData("LIOQ", "LIOQ")] // No longer maps I->1, O->0 to preserve for confusion matrix
+        [InlineData("lIoQ", "LIOQ")] // Still capitalizes
+        public void NormalizeUniversalRules_ShouldNotConvertInvalidLettersToNumbers(string input, string expected)
         {
             // Act
             var result = _sut.NormalizeUniversalRules(input);
 
             // Assert
             result.Normalized.Should().Be(expected);
-            result.AppliedRules.Should().ContainSingle().Which.Contains("Universal ISO-3779 Map");
-        }
-
-        [Theory]
-        [InlineData("LB8TC33FMNP88127S", "LB8TC33FMNP881275")]
-        [InlineData("LB8TC33FMNP88127Z", "LB8TC33FMNP881272")]
-        [InlineData("LB8TC33FMNP88127B", "LB8TC33FMNP881278")]
-        [InlineData("LB8TC33FMNP88127G", "LB8TC33FMNP881276")]
-        [InlineData("LB8TC33FMNP88127T", "LB8TC33FMNP881277")]
-        [InlineData("LB8TC33FMNP88127D", "LB8TC33FMNP881270")]
-        public void NormalizeStructuralRules_ShouldConvertVisLettersToNumbers(string input, string expected)
-        {
-            // Act
-            var result = _sut.NormalizeStructuralRules(input);
-
-            // Assert
-            result.Normalized.Should().Be(expected);
-            result.AppliedRules.Should().ContainSingle().Which.Contains("VIS Positional Numeric Map");
+            result.AppliedRules.Should().BeEmpty();
         }
 
         [Fact]
         public void NormalizeStructuralRules_ShouldNotModifyValidVin()
         {
             // Arrange
-            string validVin = "LB8TC33FMNP881270"; // Assuming 17 chars
+            string validVin = "LB8TC33FMNP881270"; 
 
             // Act
             var result = _sut.NormalizeStructuralRules(validVin);
@@ -71,17 +54,15 @@ namespace VehicleVisionOCR.Backend.Tests.OcrCorrection
             result.AppliedRules.Should().BeEmpty();
         }
 
-        [Fact]
-        public void NormalizeStructuralRules_ShouldIgnoreShortStrings()
+        [Theory]
+        [InlineData("LB8TC33FMNP88127S")]
+        public void NormalizeStructuralRules_ShouldPreserveRawTextForConfusionMatrix(string input)
         {
-            // Arrange
-            string shortString = "LB8TC33F";
-
             // Act
-            var result = _sut.NormalizeStructuralRules(shortString);
+            var result = _sut.NormalizeStructuralRules(input);
 
             // Assert
-            result.Normalized.Should().Be(shortString);
+            result.Normalized.Should().Be(input);
             result.AppliedRules.Should().BeEmpty();
         }
     }

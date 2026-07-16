@@ -35,10 +35,10 @@ namespace VehicleVisionOCR.Backend.Tests.OcrCorrection
         }
 
         [Fact]
-        public async Task GenerateCandidatesAsync_ShouldReturnBaseCandidate_WhenMatchIsExact()
+        public async Task GenerateCandidatesAsync_ShouldReturnBaseCandidate_WhenNoAmbiguity()
         {
             // Arrange
-            string input = "LB8TC33FMNP881270"; // Exact WMI 'LB8'
+            string input = "X"; // Minimal test string without confusion mapping
 
             // Act
             var candidates = await _sut.GenerateCandidatesAsync(input);
@@ -49,32 +49,39 @@ namespace VehicleVisionOCR.Backend.Tests.OcrCorrection
         }
 
         [Fact]
-        public async Task GenerateCandidatesAsync_ShouldGenerateFuzzyMatch_WhenWmiIsOffByOne()
+        public async Task GenerateCandidatesAsync_ShouldGenerateCombinations_ForAmbiguousCharacters()
         {
             // Arrange
-            string input = "LBBTC33FMNP881270"; // Typo in WMI 'LBB' instead of 'LB8'
+            string input = "G7"; // G maps to 6, 7 maps to T and 1
 
             // Act
             var candidates = await _sut.GenerateCandidatesAsync(input);
 
             // Assert
-            candidates.Should().HaveCount(2); // Base + Fuzzy
-            candidates.Select(c => c.Candidate).Should().Contain("LBBTC33FMNP881270"); // Base
-            candidates.Select(c => c.Candidate).Should().Contain("LB8TC33FMNP881270"); // Corrected
+            // 2 options for G (G, 6) * 3 options for 7 (7, T, 1) = 6 combinations
+            candidates.Should().HaveCount(6);
+            candidates.Select(c => c.Candidate).Should().Contain("G7");
+            candidates.Select(c => c.Candidate).Should().Contain("67");
+            candidates.Select(c => c.Candidate).Should().Contain("GT");
+            candidates.Select(c => c.Candidate).Should().Contain("6T");
+            candidates.Select(c => c.Candidate).Should().Contain("G1");
+            candidates.Select(c => c.Candidate).Should().Contain("61");
         }
 
         [Fact]
-        public async Task GenerateCandidatesAsync_ShouldNotGenerateFuzzyMatch_WhenWmiIsOffByMoreThanOne()
+        public async Task GenerateCandidatesAsync_ShouldLimitCombinations_ToPreventExplosion()
         {
             // Arrange
-            string input = "LXXTC33FMNP881270"; // Way off WMI
+            string input = "0158627A"; // Highly ambiguous string (8 characters, all map to multiple options)
 
             // Act
             var candidates = await _sut.GenerateCandidatesAsync(input);
 
             // Assert
-            candidates.Should().HaveCount(1);
-            candidates[0].Candidate.Should().Be(input);
+            // It should generate candidates but cap at max substitutions or max list size
+            candidates.Should().NotBeEmpty();
+            // Max substitutions is 4, so it shouldn't be the full 3^8 = 6561 combinations
+            candidates.Count.Should().BeLessThan(2000);
         }
     }
 }

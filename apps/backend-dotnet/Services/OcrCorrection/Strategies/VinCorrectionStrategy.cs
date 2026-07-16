@@ -76,7 +76,7 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Strategies
             {
                 Candidate = c.Candidate,
                 Rules = universalRules.Concat(c.Rules).ToList(),
-                Score = _scorer.ScoreCandidate(c.Candidate, rawText, ocrConfidence, knownWmis)
+                Score = _scorer.ScoreCandidate(c, rawText, ocrConfidence, knownWmis)
             }).OrderByDescending(x => x.Score).ToList();
 
             var best = scoredCandidates.FirstOrDefault();

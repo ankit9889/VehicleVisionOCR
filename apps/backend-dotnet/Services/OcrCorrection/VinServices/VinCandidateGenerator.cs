@@ -33,57 +33,74 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
             _options = options.Value;
         }
 
+        private static readonly Dictionary<char, char[]> ConfusionMatrix = new Dictionary<char, char[]>
+        {
+            {'0', new[] {'O', 'D', 'Q'}},
+            {'O', new[] {'0', 'D', 'Q'}},
+            {'1', new[] {'I', 'l', 'T', '7'}},
+            {'I', new[] {'1', 'l', 'T'}},
+            {'5', new[] {'S'}},
+            {'S', new[] {'5'}},
+            {'8', new[] {'B'}},
+            {'B', new[] {'8'}},
+            {'6', new[] {'G'}},
+            {'G', new[] {'6'}},
+            {'2', new[] {'Z'}},
+            {'Z', new[] {'2'}},
+            {'7', new[] {'T', '1'}},
+            {'T', new[] {'7', '1'}},
+            {'D', new[] {'0', 'O'}},
+            {'Q', new[] {'0', 'O'}},
+            {'A', new[] {'4'}},
+            {'4', new[] {'A'}}
+        };
+
         /// <inheritdoc/>
         public async Task<List<CandidateScore>> GenerateCandidatesAsync(string normalizedBase)
         {
-            var candidates = new List<CandidateScore>
-            {
-                // Always include the baseline candidate
-                new CandidateScore { Candidate = normalizedBase, Rules = new List<string>() }
-            };
+            var candidates = new List<CandidateScore>();
+            if (string.IsNullOrEmpty(normalizedBase)) return candidates;
 
-            if (normalizedBase.Length < 3) return candidates;
+            char[] current = new char[normalizedBase.Length];
+            GenerateCombinations(normalizedBase, 0, current, 0, candidates);
 
-            string prefix3 = normalizedBase.Substring(0, 3);
+            // WMI Fuzzy matching is still valuable. If we have prefix matches, we could add them,
+            // but the confusion matrix already handles character replacement cleanly and globally.
+            // We return the combinatorial candidates here. Scoring will handle WMI validation.
             
-            if (!_cache.TryGetValue("WmiPrefixes", out HashSet<string> knownWmis))
-            {
-                await _wmiSemaphore.WaitAsync();
-                try
-                {
-                    if (!_cache.TryGetValue("WmiPrefixes", out knownWmis))
-                    {
-                        var list = await _wmiRepository.GetActiveWmiPrefixesAsync();
-                        knownWmis = list.ToHashSet();
-                        _cache.Set("WmiPrefixes", knownWmis, System.TimeSpan.FromMinutes(_options.CacheExpirationMinutes));
-                    }
-                }
-                finally
-                {
-                    _wmiSemaphore.Release();
-                }
-            }
-
-            if (knownWmis == null || knownWmis.Count == 0) return candidates;
-
-            if (!knownWmis.Contains(prefix3))
-            {
-                foreach (var wmi in knownWmis)
-                {
-                    int distance = FuzzyMatcher.ComputeLevenshteinDistance(prefix3, wmi);
-                    if (distance == 1) // Fuzzy match 1 character off
-                    {
-                        var fuzzyCandidate = wmi + normalizedBase.Substring(3);
-                        candidates.Add(new CandidateScore
-                        {
-                            Candidate = fuzzyCandidate,
-                            Rules = new List<string> { $"Fuzzy WMI Match ({prefix3} -> {wmi})" }
-                        });
-                    }
-                }
-            }
-
             return candidates;
+        }
+
+        private void GenerateCombinations(string original, int index, char[] current, int substitutions, List<CandidateScore> results)
+        {
+            // Limit combinatorial explosion
+            if (substitutions > 4) return;
+            if (results.Count >= 2000) return;
+
+            if (index == original.Length)
+            {
+                results.Add(new CandidateScore 
+                { 
+                    Candidate = new string(current),
+                    Rules = substitutions > 0 ? new List<string> { $"Confusion Matrix ({substitutions} changes)" } : new List<string>(),
+                    Substitutions = substitutions
+                });
+                return;
+            }
+
+            // Path 1: Keep original character
+            current[index] = original[index];
+            GenerateCombinations(original, index + 1, current, substitutions, results);
+
+            // Path 2: Use alternatives from confusion matrix
+            if (ConfusionMatrix.TryGetValue(char.ToUpperInvariant(original[index]), out var alternatives))
+            {
+                foreach (var alt in alternatives)
+                {
+                    current[index] = alt;
+                    GenerateCombinations(original, index + 1, current, substitutions + 1, results);
+                }
+            }
         }
     }
 }

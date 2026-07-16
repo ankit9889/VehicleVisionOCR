@@ -427,7 +427,10 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     .Replace("GZAFOZD1", "ME4MC56FG")
                     .Replace("GZAFOZ", "ME4MC56FG") 
                     .Replace("GTAO", "GTA0")
-                    .Replace("O7", "07");
+                    .Replace("O7", "07")
+                    .Replace("NESLDS", "NE5LD5")
+                    .Replace("NESLD5", "NE5LD5")
+                    .Replace("NE5LDS", "NE5LD5");
             }
             else
             {

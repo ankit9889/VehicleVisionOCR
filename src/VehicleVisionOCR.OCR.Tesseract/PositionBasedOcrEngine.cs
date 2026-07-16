@@ -63,11 +63,50 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     int height = srcMat.Rows;
                     int width = srcMat.Cols;
 
-                    // 1. Split Image based on Position
-                    // 45% Top ensures VIN is not sliced in half. 35% Bottom ensures Model/Color are not sliced.
-                    int topHeight = (int)(height * 0.45); 
-                    int bottomHeight = (int)(height * 0.35); 
-                    int bottomY = height - bottomHeight;
+                    // 1. Split Image based on Position (DYNAMIC BARCODE AVOIDANCE)
+                    // We will find the barcode using morphology and crop everything above and below it.
+                    int barcodeTopY = (int)(height * 0.30); // Fallbacks
+                    int barcodeBottomY = (int)(height * 0.70);
+
+                    using (var minBG = new Mat())
+                    using (var minRGB = new Mat())
+                    using (var binary = new Mat())
+                    using (var closed = new Mat())
+                    {
+                        var channels = Cv2.Split(srcMat);
+                        if (channels.Length == 3)
+                        {
+                            Cv2.Min(channels[0], channels[1], minBG);
+                            Cv2.Min(minBG, channels[2], minRGB);
+                            
+                            // Invert so text/barcode is White, background is Black
+                            Cv2.Threshold(minRGB, binary, 0, 255, ThresholdTypes.BinaryInv | ThresholdTypes.Otsu);
+                            
+                            // Connect barcode lines horizontally and vertically into a solid block
+                            var kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(35, 10));
+                            Cv2.MorphologyEx(binary, closed, MorphTypes.Close, kernel);
+                            
+                            Cv2.FindContours(closed, out var contours, out _, RetrievalModes.External, ContourApproximationModes.ApproxSimple);
+                            
+                            var largestContour = contours.OrderByDescending(c => Cv2.ContourArea(c)).FirstOrDefault();
+                            if (largestContour != null)
+                            {
+                                var rect = Cv2.BoundingRect(largestContour);
+                                // A valid barcode is usually wide and in the middle half of the image
+                                if (rect.Width > width * 0.4 && rect.Height > height * 0.1)
+                                {
+                                    barcodeTopY = rect.Y;
+                                    barcodeBottomY = rect.Y + rect.Height;
+                                    _logger.LogInformation($"Dynamically found barcode at Y:{barcodeTopY} to {barcodeBottomY}");
+                                }
+                            }
+                        }
+                    }
+
+                    // Define precise crop regions
+                    int topHeight = Math.Max(10, barcodeTopY - 5); // 5px padding above barcode
+                    int bottomY = Math.Min(height - 10, barcodeBottomY + 5); // 5px padding below barcode
+                    int bottomHeight = height - bottomY;
                     int halfWidth = width / 2;
 
                     using var topMat = new Mat(srcMat, new OpenCvSharp.Rect(0, 0, width, topHeight));

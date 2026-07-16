@@ -84,9 +84,9 @@ The `OcrCorrectionCoordinator` dynamically routes raw OCR extractions (VIN, Colo
 
 ### 2. The VIN Pipeline (ISO 3779)
 The VIN strategy implements multiple discrete passes:
-*   **Normalizer**: Cleans hyphens and applies universally safe mappings (O->0, I->1) and positional mappings (VIS characters must be numeric).
+*   **Normalizer**: Cleans hyphens and applies universally safe mappings (O->0, I->1) and positional mappings (VIS characters must be numeric). It also identifies and corrects misread Check Digits (e.g., OCR 'G' -> '6').
 *   **Candidate Generator**: If the scanned prefix has a minor typo (e.g., `LBB` instead of `LB8`), it queries an `IWmiRepository` using an optimized memory-cached `SemaphoreSlim` lock and generates valid candidates using fuzzy Levenshtein matching.
-*   **Scoring Service**: Ranks candidates based on Tesseract Confidence (40%), Regex pattern integrity (30%), and the ISO 3779 Mathematical Check Digit Validation (30%). A candidate must pass the `MinVinScoreThreshold` to be accepted.
+*   **Scoring Service**: Ranks candidates based on Tesseract Confidence (40%), Regex pattern integrity (30%), and the ISO 3779 Mathematical Check Digit Validation (30%). To prevent false negatives for international VINs (like `ME4` India or `S` Europe), strict Modulus 11 validation is bypassed for regions where it is not legally mandated (non-NA and non-China). A candidate must pass the `MinVinScoreThreshold` to be accepted.
 
 ### 3. The Color Pipeline
 Uses an `IColorRepository` to compare the raw text against known active vehicle colors.

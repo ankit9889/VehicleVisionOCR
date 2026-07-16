@@ -147,7 +147,10 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     int hMargin = Math.Min(15, width / 20); 
                     int safeWidth = width - (hMargin * 2);
 
-                    using var topMat = new Mat(srcMat, new OpenCvSharp.Rect(hMargin, 0, safeWidth, topHeight));
+                    using var topMatRaw = new Mat(srcMat, new OpenCvSharp.Rect(hMargin, 0, safeWidth, topHeight));
+                    using var topMat = new Mat();
+                    // Add 50px white border to give Tesseract room to breathe around the text
+                    Cv2.CopyMakeBorder(topMatRaw, topMat, 50, 50, 50, 50, BorderTypes.Constant, new Scalar(255, 255, 255));
                     
                     // 2. Dynamic Vertical Split for Bottom Text
                     // We must find the gap between the left and right columns to avoid slicing words like "GRANITE"
@@ -291,8 +294,8 @@ namespace VehicleVisionOCR.OCR.Tesseract
             try
             {
                 using var engine = new TesseractEngine(_tessDataPath, "eng", EngineMode.LstmOnly);
-                // For exact cropped regions, treat it as a single block of text
-                engine.DefaultPageSegMode = PageSegMode.SingleBlock;
+                // For exact cropped regions that are a single line of text
+                engine.DefaultPageSegMode = PageSegMode.SingleLine;
                 
                 string bestText = "";
                 float bestConfidence = -1f;

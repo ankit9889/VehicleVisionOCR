@@ -135,9 +135,20 @@ namespace VehicleVisionOCR.OCR.Tesseract
                             byte[] matBytes = mat.ToBytes(".png");
                             using var pix = Pix.LoadFromMemory(matBytes);
                             
-                            // If isStructuredCrop is true, we force SingleBlock to prevent SparseText from splitting continuous strings
-                            PageSegMode psm = isStructuredCrop ? PageSegMode.SingleBlock : (passName == "OriginalGray" ? PageSegMode.Auto : PageSegMode.SparseText);
-                            using var page = _sharedEngine.Process(pix, psm);
+                            TesseractEngine engineToUse = _sharedEngine;
+                            bool disposeEngine = false;
+
+                            if (isStructuredCrop)
+                            {
+                                // Create an isolated engine for VIN processing with aggressive whitelist
+                                engineToUse = new TesseractEngine(_tessDataPath, _language, EngineMode.LstmOnly);
+                                engineToUse.SetVariable("tessedit_char_whitelist", "0123456789ABCDEFGHJKLMNPRSTUVWXYZ ");
+                                disposeEngine = true;
+                            }
+
+                            // Use SingleLine for structured crops (VIN) as it's a single continuous string
+                            PageSegMode psm = isStructuredCrop ? PageSegMode.SingleLine : (passName == "OriginalGray" ? PageSegMode.Auto : PageSegMode.SparseText);
+                            using var page = engineToUse.Process(pix, psm);
                         
                         string text = page.GetText();
                         allRawTexts.Add(text);
@@ -168,6 +179,10 @@ namespace VehicleVisionOCR.OCR.Tesseract
                         ExtractCandidatesFromPass(text, detectedTexts, allCandidates, passName);
                         
                         mat.Dispose();
+                        if (disposeEngine)
+                        {
+                            engineToUse.Dispose();
+                        }
                         
                     } // close foreach
                     } // close lock
@@ -372,6 +387,15 @@ namespace VehicleVisionOCR.OCR.Tesseract
             var thickenKernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(2, 2));
             Cv2.Erode(gray, thickenedMat, thickenKernel);
             dict.Add("ErodedGray", thickenedMat);
+            
+            // 8.5 Thinned Text Pass (Dilation thins dark pixels on a light background) - Fixes bleeding ink (6 vs G)
+            var thinnedMat = new Mat();
+            var thinKernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(2, 2));
+            Cv2.Dilate(gray, thinnedMat, thinKernel);
+            // Apply Otsu to the thinned image to ensure sharp edges
+            var thinnedOtsu = new Mat();
+            Cv2.Threshold(thinnedMat, thinnedOtsu, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
+            dict.Add("ThinnedText", thinnedOtsu);
             
             // 9. MinRGB Pass (Ultimate contrast for ANY colored text on white background)
             var channels = Cv2.Split(srcMat);

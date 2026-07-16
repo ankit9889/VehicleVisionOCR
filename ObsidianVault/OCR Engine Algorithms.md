@@ -73,3 +73,25 @@ To handle kerning issues in the WMI/VDS prefix sections (first 8 characters), th
 * `A23D` -> `A2S3D`
 
 This specific block-replacement guarantees that manufacturers' font quirks are corrected without relying on dangerous global search-and-replaces across the entire string.
+
+---
+
+## 🧠 Intelligent OCR Correction Pipeline (Strategy Pattern)
+Replacing the older global search-and-replace mechanics, the engine now uses a modular, SOLID-compliant OCR Correction Pipeline (`OcrCorrectionCoordinator`).
+
+### 1. The Strategy Coordinator
+The `OcrCorrectionCoordinator` dynamically routes raw OCR extractions (VIN, Color, etc.) to specific `IOcrCorrectionStrategy` instances. This prevents cross-contamination of logic (e.g., Color rules affecting VINs).
+
+### 2. The VIN Pipeline (ISO 3779)
+The VIN strategy implements multiple discrete passes:
+*   **Normalizer**: Cleans hyphens and applies universally safe mappings (O->0, I->1) and positional mappings (VIS characters must be numeric).
+*   **Candidate Generator**: If the scanned prefix has a minor typo (e.g., `LBB` instead of `LB8`), it queries an `IWmiRepository` using an optimized memory-cached `SemaphoreSlim` lock and generates valid candidates using fuzzy Levenshtein matching.
+*   **Scoring Service**: Ranks candidates based on Tesseract Confidence (40%), Regex pattern integrity (30%), and the ISO 3779 Mathematical Check Digit Validation (30%). A candidate must pass the `MinVinScoreThreshold` to be accepted.
+
+### 3. The Color Pipeline
+Uses an `IColorRepository` to compare the raw text against known active vehicle colors.
+*   **Performance Levenshtein**: Uses an `ArrayPool<int>` backed 1-dimensional array for Levenshtein calculations to completely eliminate GC allocations (preventing cache/heap exhaustion when iterating through database colors).
+*   **Matching Modes**: Checks for exact matches, token-based partial matches (e.g. `LUNAR METALLIC` -> `LUNAR SILVER METALLIC`), and standard fuzzy matches.
+
+### 4. Explainable Domain Models
+Every correction results in a rich `CorrectionResult` containing `OriginalText`, `CorrectedText`, `ConfidenceLevel`, and `AppliedRules`. If the engine is unsure, it gracefully returns the raw value unchanged (`Passthrough` mode) instead of hallucinating data.

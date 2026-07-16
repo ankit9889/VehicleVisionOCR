@@ -15,6 +15,7 @@ The backend of **VehicleVisionOCR** is a robust ASP.NET Core API application.
 - `ValidationEngine`: Regex-based detection for VINs and Barcodes (up to 25 chars). Handles locale-invariant string conversions.
 - `ImageProcessingQueue`: A background worker that dequeues uploaded images and processes them using the Tesseract OCR engine without blocking the main thread.
 - `TesseractOcrEngine`: Uses `PageSegMode.SparseText` to scan chaotic labels and extracts Color, Model, VIN, and Barcode (with dynamic fallback logic).
+- `OcrCorrectionCoordinator`: Centralized dependency injection router that applies domain-specific strategies (e.g. `VinCorrectionStrategy`, `ColorCorrectionStrategy`) to fix and validate extracted OCR strings using fuzzing and check-digit math.
 - `ScannerManager`: Manages the lifecycle and state of connected hardware and software scanners using the [[Scanner System]].
 
 ## 🌐 Endpoints

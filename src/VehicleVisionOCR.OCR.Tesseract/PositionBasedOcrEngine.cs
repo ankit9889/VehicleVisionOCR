@@ -131,28 +131,69 @@ namespace VehicleVisionOCR.OCR.Tesseract
             try
             {
                 using var engine = new TesseractEngine(_tessDataPath, "eng", EngineMode.LstmOnly);
+                engine.DefaultPageSegMode = PageSegMode.SingleBlock;
                 
-                // Preprocess for simple OCR (Grayscale -> Threshold)
-                using var gray = new Mat();
-                Cv2.CvtColor(mat, gray, ColorConversionCodes.BGR2GRAY);
-                
-                // Resize to make text larger
-                using var enlarged = new Mat();
-                Cv2.Resize(gray, enlarged, new OpenCvSharp.Size(gray.Width * 2, gray.Height * 2), 0, 0, InterpolationFlags.Cubic);
-                
-                // Otsu threshold
-                using var binary = new Mat();
-                Cv2.Threshold(enlarged, binary, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
-                
-                Cv2.ImEncode(".png", binary, out byte[] imgBytes);
-                using var img = Pix.LoadFromMemory(imgBytes);
-                using var page = engine.Process(img);
-                return page.GetText()?.Trim() ?? "";
+                string bestText = "";
+                float bestConfidence = -1f;
+
+                // Pass 1: Grayscale + Resize + Otsu
+                using (var pass1 = new Mat())
+                {
+                    using var gray = new Mat();
+                    Cv2.CvtColor(mat, gray, ColorConversionCodes.BGR2GRAY);
+                    using var enlarged = new Mat();
+                    Cv2.Resize(gray, enlarged, new OpenCvSharp.Size(gray.Width * 2, gray.Height * 2), 0, 0, InterpolationFlags.Cubic);
+                    Cv2.Threshold(enlarged, pass1, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
+                    
+                    var (text, conf) = ExtractTextAndConfidence(engine, pass1);
+                    if (conf > bestConfidence) { bestConfidence = conf; bestText = text; }
+                }
+
+                // Pass 2: Grayscale + Resize ONLY (No Thresholding, let Tesseract handle it)
+                using (var pass2 = new Mat())
+                {
+                    Cv2.CvtColor(mat, pass2, ColorConversionCodes.BGR2GRAY);
+                    Cv2.Resize(pass2, pass2, new OpenCvSharp.Size(pass2.Width * 2, pass2.Height * 2), 0, 0, InterpolationFlags.Cubic);
+                    
+                    var (text, conf) = ExtractTextAndConfidence(engine, pass2);
+                    if (conf > bestConfidence) { bestConfidence = conf; bestText = text; }
+                }
+
+                // Pass 3: Blur + Otsu (Helps with noisy background)
+                using (var pass3 = new Mat())
+                {
+                    using var gray = new Mat();
+                    Cv2.CvtColor(mat, gray, ColorConversionCodes.BGR2GRAY);
+                    using var enlarged = new Mat();
+                    Cv2.Resize(gray, enlarged, new OpenCvSharp.Size(gray.Width * 2, gray.Height * 2), 0, 0, InterpolationFlags.Cubic);
+                    Cv2.GaussianBlur(enlarged, enlarged, new OpenCvSharp.Size(3, 3), 0);
+                    Cv2.Threshold(enlarged, pass3, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
+                    
+                    var (text, conf) = ExtractTextAndConfidence(engine, pass3);
+                    if (conf > bestConfidence) { bestConfidence = conf; bestText = text; }
+                }
+
+                return bestText;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Simple OCR pass failed.");
                 return "";
+            }
+        }
+
+        private (string text, float confidence) ExtractTextAndConfidence(TesseractEngine engine, Mat binaryImage)
+        {
+            try
+            {
+                Cv2.ImEncode(".png", binaryImage, out byte[] imgBytes);
+                using var img = Pix.LoadFromMemory(imgBytes);
+                using var page = engine.Process(img);
+                return (page.GetText()?.Trim() ?? "", page.GetMeanConfidence());
+            }
+            catch
+            {
+                return ("", 0f);
             }
         }
     }

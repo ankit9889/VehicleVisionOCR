@@ -64,7 +64,6 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     int width = srcMat.Cols;
 
                     // 1. Split Image based on Position (DYNAMIC BARCODE AVOIDANCE)
-                    // We will find the barcode using morphology and crop everything above and below it.
                     int barcodeTopY = (int)(height * 0.30); // Fallbacks
                     int barcodeBottomY = (int)(height * 0.70);
 
@@ -72,6 +71,7 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     using (var minRGB = new Mat())
                     using (var binary = new Mat())
                     using (var closed = new Mat())
+                    using (var rowSums = new Mat())
                     {
                         var channels = Cv2.Split(srcMat);
                         if (channels.Length == 3)
@@ -82,23 +82,58 @@ namespace VehicleVisionOCR.OCR.Tesseract
                             // Invert so text/barcode is White, background is Black
                             Cv2.Threshold(minRGB, binary, 0, 255, ThresholdTypes.BinaryInv | ThresholdTypes.Otsu);
                             
-                            // Connect barcode lines horizontally and vertically into a solid block
-                            var kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(35, 10));
+                            // Connect barcode lines horizontally ONLY (prevents vertical merging with VIN)
+                            var kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(50, 2));
                             Cv2.MorphologyEx(binary, closed, MorphTypes.Close, kernel);
                             
-                            Cv2.FindContours(closed, out var contours, out _, RetrievalModes.External, ContourApproximationModes.ApproxSimple);
+                            // Reduce to a single column containing the sum of white pixels for each row
+                            Cv2.Reduce(closed, rowSums, ReduceDimension.Column, ReduceTypes.Sum, MatType.CV_32S);
                             
-                            var largestContour = contours.OrderByDescending(c => Cv2.ContourArea(c)).FirstOrDefault();
-                            if (largestContour != null)
+                            int thresholdScore = (int)(width * 255 * 0.3); // At least 30% of the row must be solid white
+                            int maxBlockHeight = 0;
+                            int currentBlockStart = -1;
+                            int bestFirstY = -1;
+                            int bestLastY = -1;
+
+                            for (int y = 0; y < height; y++)
                             {
-                                var rect = Cv2.BoundingRect(largestContour);
-                                // A valid barcode is usually wide and in the middle half of the image
-                                if (rect.Width > width * 0.4 && rect.Height > height * 0.1)
+                                int sum = rowSums.At<int>(y, 0);
+                                if (sum > thresholdScore)
                                 {
-                                    barcodeTopY = rect.Y;
-                                    barcodeBottomY = rect.Y + rect.Height;
-                                    _logger.LogInformation($"Dynamically found barcode at Y:{barcodeTopY} to {barcodeBottomY}");
+                                    if (currentBlockStart == -1) currentBlockStart = y;
                                 }
+                                else
+                                {
+                                    if (currentBlockStart != -1)
+                                    {
+                                        int blockHeight = y - currentBlockStart;
+                                        if (blockHeight > maxBlockHeight)
+                                        {
+                                            maxBlockHeight = blockHeight;
+                                            bestFirstY = currentBlockStart;
+                                            bestLastY = y - 1;
+                                        }
+                                        currentBlockStart = -1;
+                                    }
+                                }
+                            }
+                            
+                            if (currentBlockStart != -1)
+                            {
+                                int blockHeight = height - currentBlockStart;
+                                if (blockHeight > maxBlockHeight)
+                                {
+                                    maxBlockHeight = blockHeight;
+                                    bestFirstY = currentBlockStart;
+                                    bestLastY = height - 1;
+                                }
+                            }
+
+                            if (bestFirstY != -1 && maxBlockHeight > height * 0.1) // Barcode must be at least 10% of image height
+                            {
+                                barcodeTopY = bestFirstY;
+                                barcodeBottomY = bestLastY;
+                                _logger.LogInformation($"Dynamically found barcode via Row Projection at Y:{barcodeTopY} to {barcodeBottomY}");
                             }
                         }
                     }

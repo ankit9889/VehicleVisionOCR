@@ -57,7 +57,19 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
             char[] chars = candidate.ToCharArray();
             bool structuralChanged = false;
 
-            // Characters 12-17 (VIS) must be numeric
+            // Character 9 (index 8) is the Check Digit. It must be 0-9 or 'X'.
+            // If OCR misread it as another letter (like 'G'), map it to its numeric equivalent.
+            if (char.IsLetter(chars[8]) && chars[8] != 'X')
+            {
+                char mapped = MapLetterToNumber(chars[8]);
+                if (mapped != chars[8])
+                {
+                    chars[8] = mapped;
+                    structuralChanged = true;
+                }
+            }
+
+            // Enforce numeric characters for VIS positions 12-17 (indices 11-16)
             for (int i = 11; i < 17; i++)
             {
                 if (char.IsLetter(chars[i]))

@@ -50,18 +50,17 @@ namespace VehicleVisionOCR.Backend.Tests.OcrCorrection
         public void ScoreCandidate_UnknownWMI_ShouldNotGiveBonus()
         {
             // Arrange
-            string validVin = "9HGCM82633A004352"; // Check digit math will likely be invalid, let's just test WMI
+            string validVin = "1AGCM82633A004352"; // WMI '1AG' is not in our known list. It starts with '1', so check digit is enforced (and will fail math).
             double ocrConfidence = 100.0; // 40
-            var wmis = new List<string> { "1HG" }; // 0 bonus since 9HG is not in wmis
+            var wmis = new List<string> { "1HG" }; // 0 bonus since 1AG is not in wmis
 
             // Act
             double score = _sut.ScoreCandidate(validVin, validVin, ocrConfidence, wmis);
 
             // Assert
-            // 40 (conf) + 30 (pattern) + ? (check digit penalty or bonus)
-            // It should at least be calculable
+            // 40 (conf) + 30 (pattern) - 15 (check digit penalty) = 55
             score.Should().NotBe(0);
-            score.Should().BeLessThan(100.0); // Can't reach 100 without WMI and potentially good CD
+            score.Should().BeLessThan(100.0);
         }
     }
 }

@@ -29,13 +29,21 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Helpers
 
         /// <summary>
         /// Validates a 17-character VIN by transliterating characters to numbers, applying standard weights,
-        /// and calculating modulus 11.
+        /// and calculating modulus 11. 
+        /// Note: Check digit validation is only strictly enforced for North American and Chinese VINs.
         /// </summary>
         /// <param name="vin">The 17-character VIN candidate string.</param>
-        /// <returns>True if the mathematically derived check digit matches the 9th character in the VIN; otherwise, false.</returns>
+        /// <returns>True if valid or if from a region where check digits are not enforced; otherwise, false.</returns>
         public static bool Validate(string vin)
         {
             if (string.IsNullOrWhiteSpace(vin) || vin.Length != 17) return false;
+
+            // Check digit is only mandatory in North America (1, 2, 3, 4, 5) and China (L).
+            // For other regions (like India - M, Japan - J, Europe - S, W, etc.), we bypass strict validation
+            // to avoid rejecting valid international VINs.
+            char wmiRegion = vin[0];
+            bool isCheckDigitMandatory = wmiRegion == '1' || wmiRegion == '2' || wmiRegion == '3' || 
+                                         wmiRegion == '4' || wmiRegion == '5' || wmiRegion == 'L';
 
             int sum = 0;
             for (int i = 0; i < 17; i++)
@@ -44,7 +52,9 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Helpers
                 int val = GetCharValue(c);
                 if (val == -1)
                 {
-                    return false; // Contains invalid character (I, O, Q, or special)
+                    // Contains invalid character (I, O, Q, or special).
+                    // This is invalid globally, so we always return false here.
+                    return false; 
                 }
                 sum += val * Weights[i];
             }
@@ -52,7 +62,10 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Helpers
             int remainder = sum % 11;
             char expectedCheckDigit = remainder == 10 ? 'X' : (char)('0' + remainder);
 
-            return vin[8] == expectedCheckDigit;
+            bool matches = vin[8] == expectedCheckDigit;
+            
+            // If it matches, it's valid. If it doesn't match but isn't mandatory, it's still considered valid.
+            return matches || !isCheckDigitMandatory;
         }
     }
 }

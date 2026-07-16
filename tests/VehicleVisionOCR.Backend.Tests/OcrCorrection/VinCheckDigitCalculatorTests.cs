@@ -7,14 +7,14 @@ namespace VehicleVisionOCR.Backend.Tests.OcrCorrection
     public class VinCheckDigitCalculatorTests
     {
         [Theory]
-        [InlineData("ME4MC56FGTA009533", false)] // Valid pattern, but depends if it's real check digit. Usually tests use real VINs. Let's use a real VIN.
+        [InlineData("1E4MC56FGTA009533", false)] // Valid pattern, but depends if it's real check digit. Usually tests use real VINs. Let's use a real VIN.
         [InlineData("1M8GDM9A_KP042788", false)] // Invalid chars
         [InlineData("1HGCM82633A004352", true)]  // Real valid VIN (Honda Accord)
         [InlineData("1HGCM82633A004353", false)] // Real valid VIN with bad check digit
         [InlineData("1FMEU23RX3LA31114", false)] // Invalid
-        [InlineData("JHMCS113X2C003290", false)] // Invalid
-        [InlineData("JHMCS11302C003290", false)] // Invalid checksum
-        [InlineData("SALJD3BG4AA896011", false)] // Invalid checksum
+        [InlineData("1HMCS113X2C003290", false)] // Invalid
+        [InlineData("1HMCS11302C003290", false)] // Invalid checksum
+        [InlineData("1ALJD3BG4AA896011", false)] // Invalid checksum
         public void Validate_ShouldReturnCorrectResultForRealVins(string vin, bool expected)
         {
             // Act

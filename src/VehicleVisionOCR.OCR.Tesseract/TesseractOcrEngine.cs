@@ -366,6 +366,16 @@ namespace VehicleVisionOCR.OCR.Tesseract
             Cv2.Erode(gray, thickenedMat, thickenKernel);
             dict.Add("ErodedGray", thickenedMat);
             
+            // 9. Blue Channel Pass (Best for Red Text on White Background)
+            var channels = Cv2.Split(srcMat);
+            if (channels.Length > 0)
+            {
+                var blueChannel = channels[0]; // BGR format, 0 is Blue
+                var blueOtsuMat = new Mat();
+                Cv2.Threshold(blueChannel, blueOtsuMat, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
+                dict.Add("BlueChannelOtsu", blueOtsuMat);
+            }
+            
             return dict;
         }
 

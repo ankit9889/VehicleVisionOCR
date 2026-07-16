@@ -149,14 +149,27 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     if (conf > bestConfidence) { bestConfidence = conf; bestText = text; }
                 }
 
-                // Pass 2: Grayscale + Resize ONLY (No Thresholding, let Tesseract handle it)
+                // Pass 2: Blue Channel + Barcode Removal (Best for Red Text + Barcode interference)
                 using (var pass2 = new Mat())
                 {
-                    Cv2.CvtColor(mat, pass2, ColorConversionCodes.BGR2GRAY);
-                    Cv2.Resize(pass2, pass2, new OpenCvSharp.Size(pass2.Width * 2, pass2.Height * 2), 0, 0, InterpolationFlags.Cubic);
+                    var channels = Cv2.Split(mat);
+                    using var blueChannel = channels.Length > 0 ? channels[0] : new Mat(); // OpenCV uses BGR
                     
-                    var (text, conf) = ExtractTextAndConfidence(engine, pass2);
-                    if (conf > bestConfidence) { bestConfidence = conf; bestText = text; }
+                    if (!blueChannel.Empty())
+                    {
+                        using var enlarged = new Mat();
+                        Cv2.Resize(blueChannel, enlarged, new OpenCvSharp.Size(blueChannel.Width * 2, blueChannel.Height * 2), 0, 0, InterpolationFlags.Cubic);
+                        
+                        using var binary = new Mat();
+                        Cv2.Threshold(enlarged, binary, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
+                        
+                        // Barcode removal: horizontal open morphology
+                        var kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(15, 1)); // Wider kernel
+                        Cv2.MorphologyEx(binary, pass2, MorphTypes.Open, kernel);
+                        
+                        var (text, conf) = ExtractTextAndConfidence(engine, pass2);
+                        if (conf > bestConfidence) { bestConfidence = conf; bestText = text; }
+                    }
                 }
 
                 // Pass 3: Blur + Otsu (Helps with noisy background)

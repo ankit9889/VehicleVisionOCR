@@ -52,3 +52,24 @@ To find the exact split point:
 Rather than relying on image-destroying morphological erasers to remove barcode noise (which often erased thin valid characters like the 'I' in 'ID'), the pipeline uses **C# Regex Line Filtering**.
 
 If Tesseract accidentally reads barcode edges as `l I l I l`, the post-processor filters out the garbage by ensuring extracted lines contain a minimum alphanumeric complexity (e.g., `l.Distinct().Count() >= 4` and valid regex matches), completely isolating the correct Model and Color strings.
+
+---
+
+## 🔠 Optical Character Confusion (The "5" vs "S" Problem)
+Due to dense and sometimes overlapping kerning in standard vehicle manufacturing labels, Tesseract consistently misidentifies certain characters based on surrounding patterns.
+
+**Example Conflict:** The letters `S` and `5`, and `3` and `S` are often visually identical when printed closely together. A VIN like `A2S3D` may be incorrectly scanned as `A23D` (merging the S and 3), or `NE5LD5` as `NESLDS`.
+
+### 1. Global VIS Position Rules
+For standard 17-character VINs, the VIS (Vehicle Indicator Section - last 6 characters) must be numerical.
+The `TesseractOcrEngine` employs a fixed character-position rule:
+* If the extracted text is exactly 17 characters, it loops through the **last 6 characters** and hard-replaces confused letters (`S` -> `5`, `B` -> `8`, `Z` -> `2`, `P` -> `0`).
+* It globally replaces illegal VIN letters (`I`, `O`, `Q`) everywhere in the string.
+
+### 2. Prefix-Based Dictionary Corrections
+If a VIN is *not* exactly 17 characters long (e.g., due to extra manufacturer characters printed alongside it like `A2S3D...00`), the global VIS position logic is safely bypassed to avoid corrupting actual text.
+To handle kerning issues in the WMI/VDS prefix sections (first 8 characters), the engine uses a highly specific Prefix Dictionary in `appsettings.json`:
+* `NESLDS` -> `NE5LD5`
+* `A23D` -> `A2S3D`
+
+This specific block-replacement guarantees that manufacturers' font quirks are corrected without relying on dangerous global search-and-replaces across the entire string.

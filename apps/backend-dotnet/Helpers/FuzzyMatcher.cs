@@ -6,34 +6,46 @@ namespace VehicleVisionOCR.Backend.Helpers
     {
         public static int ComputeLevenshteinDistance(string source, string target)
         {
-            if (string.IsNullOrEmpty(source))
-            {
-                if (string.IsNullOrEmpty(target)) return 0;
-                return target.Length;
-            }
-
+            if (string.IsNullOrEmpty(source)) return target?.Length ?? 0;
             if (string.IsNullOrEmpty(target)) return source.Length;
 
             int n = source.Length;
             int m = target.Length;
-            int[,] d = new int[n + 1, m + 1];
 
-            for (int i = 0; i <= n; d[i, 0] = i++) { }
-            for (int j = 1; j <= m; d[0, j] = j++) { }
+            var pool = System.Buffers.ArrayPool<int>.Shared;
+            int[] v0 = pool.Rent(m + 1);
+            int[] v1 = pool.Rent(m + 1);
 
-            for (int i = 1; i <= n; i++)
+            try
             {
-                for (int j = 1; j <= m; j++)
-                {
-                    int cost = (target[j - 1] == source[i - 1]) ? 0 : 1;
-                    int min1 = d[i - 1, j] + 1;
-                    int min2 = d[i, j - 1] + 1;
-                    int min3 = d[i - 1, j - 1] + cost;
-                    d[i, j] = Math.Min(Math.Min(min1, min2), min3);
-                }
-            }
+                for (int i = 0; i <= m; i++)
+                    v0[i] = i;
 
-            return d[n, m];
+                for (int i = 0; i < n; i++)
+                {
+                    v1[0] = i + 1;
+
+                    for (int j = 0; j < m; j++)
+                    {
+                        int substitutionCost = (source[i] == target[j]) ? 0 : 1;
+                        v1[j + 1] = Math.Min(
+                            Math.Min(v1[j] + 1, v0[j + 1] + 1),
+                            v0[j] + substitutionCost);
+                    }
+
+                    // Swap arrays
+                    var temp = v0;
+                    v0 = v1;
+                    v1 = temp;
+                }
+
+                return v0[m];
+            }
+            finally
+            {
+                pool.Return(v0);
+                pool.Return(v1);
+            }
         }
 
         public static bool IsFuzzyMatch(string rawText, string dbColor, int thresholdDistance = 3)

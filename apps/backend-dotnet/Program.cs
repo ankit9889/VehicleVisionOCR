@@ -81,6 +81,25 @@ try
     // Register Mobile Web Scanner
     builder.Services.AddSingleton<IScannerPlugin, MobileScannerPlugin>();
 
+    // Register Validation & OCR Correction Framework Infrastructure
+    builder.Services.Configure<VehicleVisionOCR.Backend.Services.OcrCorrection.OcrCorrectionOptions>(
+        builder.Configuration.GetSection(VehicleVisionOCR.Backend.Services.OcrCorrection.OcrCorrectionOptions.Section));
+
+    builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.IOcrCorrectionCoordinator, VehicleVisionOCR.Backend.Services.OcrCorrection.OcrCorrectionCoordinator>();
+    
+    // VIN Pipeline
+    builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.IVinNormalizer, VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices.VinNormalizer>();
+    builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.IVinCandidateGenerator, VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices.VinCandidateGenerator>();
+    builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.IVinScoringService, VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices.VinScoringService>();
+    builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.IOcrCorrectionStrategy, VehicleVisionOCR.Backend.Services.OcrCorrection.Strategies.VinCorrectionStrategy>();
+    
+    // Color Pipeline
+    builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.IOcrCorrectionStrategy, VehicleVisionOCR.Backend.Services.OcrCorrection.Strategies.ColorCorrectionStrategy>();
+
+    // Mock Repositories for WMI and Color (replace with EF Core implementations in production)
+    builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.IWmiRepository, VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.MockWmiRepository>();
+    builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.IColorRepository, VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.MockColorRepository>();
+
     // Register OCR Framework and Tesseract Plugin
     builder.Services.AddOcrFramework();
     builder.Services.AddTesseractOcrPlugin();

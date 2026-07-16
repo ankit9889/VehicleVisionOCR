@@ -87,6 +87,8 @@ namespace VehicleVisionOCR.Backend.BackgroundServices
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
             var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<ScannerHub>>();
 
+            var ocrCorrectionCoordinator = scope.ServiceProvider.GetRequiredService<VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.IOcrCorrectionCoordinator>();
+
             try
             {
                 _logger.LogInformation("Starting OCR processing on queued image.");
@@ -118,28 +120,35 @@ namespace VehicleVisionOCR.Backend.BackgroundServices
                     if (field.Value == "NULL" || string.IsNullOrWhiteSpace(field.Value))
                         continue;
 
-                    if (field.Key == "VIN" && field.Value.Length == 17) vehicle.Vin = new VIN(field.Value);
-                    if (field.Key == "LicensePlate" || field.Key == "Barcode") vehicle.RegistrationNumber = new RegistrationNumber(field.Value);
-                    if (field.Key == "Color") vehicle.Color = field.Value;
+                    if (field.Key == "VIN")
+                    {
+                        var vinResult = await ocrCorrectionCoordinator.ProcessFieldAsync(VehicleVisionOCR.Backend.Services.OcrCorrection.Enums.TargetFieldType.VIN, field.Value, response.Result.OverallConfidence.Percentage);
+                        if (vinResult.IsValid)
+                        {
+                            vehicle.Vin = new VIN(vinResult.CorrectedText);
+                        }
+                    }
+                    else if (field.Key == "LicensePlate" || field.Key == "Barcode") 
+                    {
+                        vehicle.RegistrationNumber = new RegistrationNumber(field.Value);
+                    }
+                    else if (field.Key == "Color")
+                    {
+                        var colorResult = await ocrCorrectionCoordinator.ProcessFieldAsync(VehicleVisionOCR.Backend.Services.OcrCorrection.Enums.TargetFieldType.Color, field.Value, response.Result.OverallConfidence.Percentage);
+                        if (colorResult.IsValid)
+                        {
+                            vehicle.Color = colorResult.CorrectedText;
+                        }
+                    }
                 }
 
-                // Attempt dynamic color matching from Database
-                var dbContext = scope.ServiceProvider.GetRequiredService<VehicleVisionOCR.Infrastructure.Persistence.ApplicationDbContext>();
-                var dbColors = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(dbContext.VehicleColors.Select(c => c.Name));
-                
-                if (response.Result.RawText != null)
+                // If color was not found in specific ExtractedFields, attempt a fallback run against the entire RawText
+                if (string.IsNullOrWhiteSpace(vehicle.Color) && !string.IsNullOrWhiteSpace(response.Result.RawText))
                 {
-                    var rawTextUpper = response.Result.RawText.ToUpperInvariant().Replace("\n", " ").Replace("\r", " ");
-                    rawTextUpper = System.Text.RegularExpressions.Regex.Replace(rawTextUpper, @"\s+", " ");
-                    // We sort by length descending to match longest color name first
-                    foreach (var dbColor in dbColors.Where(c => !string.IsNullOrEmpty(c)).OrderByDescending(c => c.Length))
+                    var colorResult = await ocrCorrectionCoordinator.ProcessFieldAsync(VehicleVisionOCR.Backend.Services.OcrCorrection.Enums.TargetFieldType.Color, response.Result.RawText, response.Result.OverallConfidence.Percentage);
+                    if (colorResult.IsValid && colorResult.WasCorrected)
                     {
-                        if (VehicleVisionOCR.Backend.Helpers.FuzzyMatcher.IsFuzzyMatch(rawTextUpper, dbColor.ToUpperInvariant()))
-                        {
-                            vehicle.Color = dbColor;
-                            _logger.LogInformation($"Dynamic Color Matched from DB (Fuzzy): {dbColor}");
-                            break;
-                        }
+                        vehicle.Color = colorResult.CorrectedText;
                     }
                 }
 

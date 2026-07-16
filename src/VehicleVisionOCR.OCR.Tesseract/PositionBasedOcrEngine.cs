@@ -64,9 +64,9 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     int width = srcMat.Cols;
 
                     // 1. Split Image based on Position
-                    // Adjusted to completely avoid the barcode (Barcode is usually 30% to 70%)
-                    int topHeight = (int)(height * 0.30); // Top 30% for VIN
-                    int bottomHeight = (int)(height * 0.25); // Bottom 25% for Model/Color
+                    // 45% Top ensures VIN is not sliced in half. 35% Bottom ensures Model/Color are not sliced.
+                    int topHeight = (int)(height * 0.45); 
+                    int bottomHeight = (int)(height * 0.35); 
                     int bottomY = height - bottomHeight;
                     int halfWidth = width / 2;
 
@@ -90,7 +90,12 @@ namespace VehicleVisionOCR.OCR.Tesseract
 
                     // 3. Process BOTTOM LEFT for Model EXACTLY
                     string modelText = RunSimpleOcr(bottomLeftMat);
-                    string model = modelText.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim() ?? "";
+                    var modelLines = modelText.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(l => l.Trim()).ToList();
+                    
+                    // Filter out barcode noise (barcode noise is usually repetitive 'I', 'L', 'l', '|' with few distinct chars)
+                    // A valid model line should have a good mix of alphanumerics and be reasonably long
+                    var validModelLines = modelLines.Where(l => l.Length >= 4 && l.Distinct().Count() >= 4 && Regex.IsMatch(l, @"[A-HJ-NP-Z0-9]{3,}")).ToList();
+                    string model = validModelLines.FirstOrDefault() ?? "";
                     
                     if (!string.IsNullOrEmpty(model))
                     {
@@ -100,7 +105,10 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     // 4. Process BOTTOM RIGHT for Color EXACTLY
                     string colorText = RunSimpleOcr(bottomRightMat);
                     var colorLines = colorText.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(l => l.Trim()).ToList();
-                    string color = colorLines.LastOrDefault(l => l.Length > 3) ?? colorLines.LastOrDefault() ?? "";
+                    
+                    // Filter out barcode noise
+                    var validColorLines = colorLines.Where(l => l.Length >= 3 && Regex.IsMatch(l, @"[a-zA-Z]{3,}") && !Regex.IsMatch(l, @"^[lI1\|\s]+$")).ToList();
+                    string color = validColorLines.LastOrDefault(l => l.Length > 3) ?? validColorLines.LastOrDefault() ?? "";
                     
                     color = Regex.Replace(color, @"\s+[A-Z]\s*$", "");
                     
@@ -154,7 +162,7 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     }
                 }
 
-                // Pass 2: MinRGB + Morphological Barcode Removal (In case crop still catches barcode edges)
+                // Pass 2: MinRGB without Morphological Barcode Removal (Relying on C# Regex filtering to ignore barcode)
                 using (var pass2 = new Mat())
                 {
                     var channels = Cv2.Split(mat);
@@ -170,9 +178,8 @@ namespace VehicleVisionOCR.OCR.Tesseract
                         using var binary = new Mat();
                         Cv2.Threshold(enlarged, binary, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
                         
-                        // To remove black vertical lines on white background, we use Close (Dilate then Erode)
-                        var kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(15, 1));
-                        Cv2.MorphologyEx(binary, binary, MorphTypes.Close, kernel);
+                        // Barcode removal by morphology is risky (destroys thin characters like 'I' in 'ID').
+                        // We rely on Regex filtering in the extraction step instead.
                         
                         var (text, conf) = ExtractTextAndConfidence(engine, binary);
                         if (conf > bestConfidence) { bestConfidence = conf; bestText = text; }

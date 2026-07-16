@@ -48,6 +48,11 @@ namespace VehicleVisionOCR.OCR.Tesseract
 
         public async Task<OcrResultData> ProcessImageAsync(byte[] imageData)
         {
+            return await ProcessImageAsync(imageData, false);
+        }
+
+        public async Task<OcrResultData> ProcessImageAsync(byte[] imageData, bool isStructuredCrop)
+        {
             if (imageData == null || imageData.Length == 0)
                 throw new ArgumentException("Image data is null or empty.", nameof(imageData));
 

@@ -436,7 +436,8 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     .Replace("NESLD5", "NE5LD5")
                     .Replace("NE5LDS", "NE5LD5")
                     .Replace("A23D", "A2S3D")
-                    .Replace("LBBTC", "LB8TC");
+                    .Replace("LBBTC", "LB8TC")
+                    .Replace("LBSTC", "LB8TC");
             }
             else
             {

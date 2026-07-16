@@ -10,6 +10,8 @@ The system is divided into three main apps and a core scanner framework.
 3. [[Desktop Application]]: Electron wrapper to bundle the backend and frontend into a single standalone Windows executable installer.
 4. [[Scanner System]]: A plugin-based hardware interface for Zebra barcode scanners and Mobile Web Cameras.
 5. [[Troubleshooting]]: Common issues, API 500 errors, database resets, and network connectivity debugging.
+6. [[OCR Engine Algorithms]]: Detailed breakdown of the Computer Vision (OpenCV) algorithms, MinRGB preprocessing, dynamic projection splitting, and Tesseract optimization logic used in the extraction pipeline.
+
 
 ## ⚙️ How It Works
 - The Desktop App starts the Backend server (port 5256).

@@ -11,17 +11,10 @@
             "id": "2f60da1e698f2f4a",
             "type": "leaf",
             "state": {
-              "type": "canvas",
-              "state": {
-                "file": "Untitled.canvas",
-                "viewState": {
-                  "x": 0,
-                  "y": 0,
-                  "zoom": 0
-                }
-              },
-              "icon": "lucide-layout-dashboard",
-              "title": "Untitled"
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
             }
           }
         ]
@@ -185,13 +178,14 @@
   },
   "active": "2f60da1e698f2f4a",
   "lastOpenFiles": [
-    "Untitled.base",
-    "Untitled.canvas",
-    "Desktop Application.md",
-    "Scanner System.md",
+    "OCR Engine Algorithms.md",
     "Home.md",
-    "Frontend Architecture.md",
+    "Scanner System.md",
     "Troubleshooting.md",
-    "Backend Architecture.md"
+    "Frontend Architecture.md",
+    "Desktop Application.md",
+    "Backend Architecture.md",
+    "Untitled.canvas",
+    "Untitled.base"
   ]
 }

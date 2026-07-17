@@ -183,7 +183,7 @@ namespace VehicleVisionOCR.OCR.Tesseract
                                     }
 
                                     // Extract candidates from this pass
-                                    ExtractCandidatesFromPass(text, detectedTexts, allCandidates, $"{passName}_{psm}");
+                                    ExtractCandidatesFromPass(text, detectedTexts, allCandidates, $"{passName}_{psm}", isStructuredCrop);
                                 }
                             
                             mat.Dispose();
@@ -431,7 +431,7 @@ namespace VehicleVisionOCR.OCR.Tesseract
         }
 
 
-        private void ExtractCandidatesFromPass(string rawText, List<DetectedText> detectedTexts, List<VinCandidate> allCandidates, string passName)
+        private void ExtractCandidatesFromPass(string rawText, List<DetectedText> detectedTexts, List<VinCandidate> allCandidates, string passName, bool isStructuredCrop)
         {
             // 1. Standard Regex pass on lines (prevent merging different lines into one giant false-positive string)
             var lines = rawText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
@@ -480,7 +480,7 @@ namespace VehicleVisionOCR.OCR.Tesseract
             }
 
             // 3. Spatial lines pass
-            if (detectedTexts.Any())
+            if (detectedTexts.Any() && !isStructuredCrop)
             {
                 var lineGroups = new List<List<DetectedText>>();
                 foreach (var dt in detectedTexts.OrderBy(d => d.Y))
@@ -601,7 +601,7 @@ namespace VehicleVisionOCR.OCR.Tesseract
                 }
 
                 // Reward standard OCR line engine over manual spatial weaving
-                if (cand.Source == "ExactVIN")
+                if (cand.Source == "ExactVIN" || cand.Source == "CleanLine" || cand.Source == "SpacelessLine")
                 {
                     cand.Score += 30;
                 }

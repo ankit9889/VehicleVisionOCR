@@ -148,9 +148,10 @@ namespace VehicleVisionOCR.OCR.Tesseract
                                 byte[] matBytes = mat.ToBytes(".png");
                                 using var pix = Pix.LoadFromMemory(matBytes);
                                 
-                                // Implement PSM Ensemble (PSM 7 and PSM 13) for structured crops
+                                // Implement PSM Ensemble (PSM 3 and PSM 6) for structured crops
+                                // We strictly AVOID SingleLine (PSM 7) because the "Top" crop often contains 2 lines (Header + VIN), and SingleLine squashes them, causing hallucinations like MEG6.
                                 PageSegMode[] psms = isStructuredCrop 
-                                    ? new[] { PageSegMode.SingleBlock, PageSegMode.Auto, PageSegMode.SingleLine, PageSegMode.RawLine } 
+                                    ? new[] { PageSegMode.Auto, PageSegMode.SingleBlock } 
                                     : new[] { (passName == "OriginalGray" ? PageSegMode.Auto : PageSegMode.SparseText) };
 
                                 foreach (var psm in psms)

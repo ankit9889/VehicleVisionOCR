@@ -97,11 +97,17 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
                         score -= 15.0; // Penalty if 9th pos is not digit or X
                     }
                 }
+                else if (candidate.Length == 17 && char.IsLetter(candidate[8]) && candidate[8] != 'X')
+                {
+                    // Soft penalty: Even if not strictly enforced by region, 17-char VINs rarely use letters here.
+                    // This mathematically breaks ties in favor of valid 16-char Asian VINs.
+                    score -= 5.0;
+                }
 
             }
 
-            // Normalize max score to 100
-            return score > 100.0 ? 100.0 : score;
+            // Return raw score to allow mathematical tie-breakers (like WMI) to work instead of capping at 100.
+            return score;
         }
     }
 }

@@ -85,18 +85,15 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
                     }
                 }
 
-                // For Check Digit (position 9, index 8), if mandatory, it must be 0-9 or X
-                char wmiRegion = candidate[0];
-                bool isCheckDigitMandatory = (wmiRegion == '1' || wmiRegion == '2' || wmiRegion == '3' || 
-                                             wmiRegion == '4' || wmiRegion == '5' || wmiRegion == 'L') && candidate.Length == 17;
-
-                if (isCheckDigitMandatory)
+                // For Check Digit (position 9, index 8), it must be 0-9 or X for standard 17-char VINs
+                if (candidate.Length == 17)
                 {
                     if (char.IsLetter(candidate[8]) && candidate[8] != 'X')
                     {
-                        score -= 10.0;
+                        score -= 15.0; // Penalty if 9th pos is not digit or X
                     }
                 }
+
             }
 
             // Normalize max score to 100

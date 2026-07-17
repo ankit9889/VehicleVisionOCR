@@ -106,6 +106,7 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Strategies
         private string Normalize(string text, List<string> rules)
         {
             string norm = text.Trim().ToUpperInvariant();
+            norm = Regex.Replace(norm, @"[^A-Z0-9 ]+", "");
             norm = WhitespaceRegex().Replace(norm, " "); // Collapse multiple spaces
 
             char[] chars = norm.ToCharArray();

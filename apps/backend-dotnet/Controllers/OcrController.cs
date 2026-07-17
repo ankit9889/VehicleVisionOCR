@@ -55,30 +55,17 @@ namespace VehicleVisionOCR.Backend.Controllers
                         }
                     }
 
-                    // Attempt dynamic color matching from Database for UI testing
-                    if (!string.IsNullOrEmpty(result.Result.RawText))
+                    var colorField = result.Result.ExtractedFields.Find(f => f.Key.Equals("Color", StringComparison.OrdinalIgnoreCase));
+                    if (colorField != null)
                     {
-                        using var scope = HttpContext.RequestServices.CreateScope();
-                        var dbContext = scope.ServiceProvider.GetRequiredService<VehicleVisionOCR.Infrastructure.Persistence.ApplicationDbContext>();
-                        var dbColors = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(System.Linq.Queryable.Select(dbContext.VehicleColors, c => c.Name));
-                        
-                        var rawTextUpper = result.Result.RawText.ToUpperInvariant().Replace("\n", " ").Replace("\r", " ");
-                        rawTextUpper = WhitespaceRegex().Replace(rawTextUpper, " ");
-                        foreach (var dbColor in System.Linq.Enumerable.OrderByDescending(dbColors.Where(c => !string.IsNullOrEmpty(c)), c => c.Length))
+                        var colorResult = await _correctionCoordinator.ProcessFieldAsync(
+                            VehicleVisionOCR.Backend.Services.OcrCorrection.Enums.TargetFieldType.Color, 
+                            colorField.Value, 
+                            result.Result.OverallConfidence.Percentage);
+                            
+                        if (colorResult.IsValid)
                         {
-                            if (VehicleVisionOCR.Backend.Helpers.FuzzyMatcher.IsFuzzyMatch(rawTextUpper, dbColor.ToUpperInvariant()))
-                            {
-                                var colorField = result.Result.ExtractedFields.Find(f => f.Key.Equals("Color", StringComparison.OrdinalIgnoreCase));
-                                if (colorField != null)
-                                {
-                                    colorField.Value = dbColor;
-                                }
-                                else
-                                {
-                                    result.Result.ExtractedFields.Add(new VehicleVisionOCR.OCR.Core.Models.OcrField { Key = "Color", Value = dbColor });
-                                }
-                                break;
-                            }
+                            colorField.Value = colorResult.CorrectedText;
                         }
                     }
                 }

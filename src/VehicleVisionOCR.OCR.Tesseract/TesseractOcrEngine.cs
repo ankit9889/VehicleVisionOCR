@@ -465,9 +465,9 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     foreach (Match match in exactVinRegex.Matches(squishedWord))
                     {
                         string val = match.Groups[1].Value;
-                        if (val.Length == 17)
+                        if (val.Length >= 14 && val.Length <= 20)
                         {
-                            allCandidates.Add(new VinCandidate { Text = val, OriginalText = val, Source = "Exact17", PassName = passName });
+                            allCandidates.Add(new VinCandidate { Text = val, OriginalText = val, Source = "ExactVIN", PassName = passName });
                         }
                     }
                     
@@ -528,12 +528,16 @@ namespace VehicleVisionOCR.OCR.Tesseract
                 Console.WriteLine($"Candidate: '{cand.Text}' | Source: {cand.Source} | Pass: {cand.PassName} | Original: '{cand.OriginalText}'");
                 cand.Score = 0;
 
-                // Length exactly 17 is heavily rewarded
+                // Length 16-17 is standard
                 if (cand.Text.Length == 17)
                 {
-                    cand.Score += 80;
+                    cand.Score += 40;
                 }
-                else if (cand.Text.Length >= 14 && cand.Text.Length <= 25)
+                else if (cand.Text.Length == 16)
+                {
+                    cand.Score += 35; 
+                }
+                else if (cand.Text.Length >= 14 && cand.Text.Length <= 20)
                 {
                     cand.Score += 25; // Valid generic barcode length
                 }

@@ -54,47 +54,6 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
                 if (isCheckDigitValid)
                 {
                     score += 30.0;
-                    
-                    // Penalty for 17-char VINs that pass because they are "non-mandatory" 
-                    // but mathematically FAIL the check digit. This helps break ties against 
-                    // hallucinations (like MEG6 instead of ME6) that happen to be 17 chars.
-                    if (candidate.Length == 17)
-                    {
-                        char wmiRegion = candidate[0];
-                        bool isCheckDigitMandatory = (wmiRegion == '1' || wmiRegion == '2' || wmiRegion == '3' || 
-                                                     wmiRegion == '4' || wmiRegion == '5' || wmiRegion == 'L');
-                                                     
-                        if (!isCheckDigitMandatory)
-                        {
-                            int[] weights = { 8, 7, 6, 5, 4, 3, 2, 10, 0, 9, 8, 7, 6, 5, 4, 3, 2 };
-                            int sum = 0;
-                            bool invalidChar = false;
-                            for (int i = 0; i < 17; i++)
-                            {
-                                char c = candidate[i];
-                                int val = c switch
-                                {
-                                    'A' or 'J' or '1' => 1, 'B' or 'K' or 'S' or '2' => 2, 'C' or 'L' or 'T' or '3' => 3,
-                                    'D' or 'M' or 'U' or '4' => 4, 'E' or 'N' or 'V' or '5' => 5, 'F' or 'W' or '6' => 6,
-                                    'G' or 'P' or 'X' or '7' => 7, 'H' or 'Y' or '8' => 8, 'R' or 'Z' or '9' => 9, '0' => 0,
-                                    _ => -1
-                                };
-                                if (val == -1) { invalidChar = true; break; }
-                                sum += val * weights[i];
-                            }
-                            
-                            if (!invalidChar)
-                            {
-                                int remainder = sum % 11;
-                                char expectedCheckDigit = remainder == 10 ? 'X' : (char)('0' + remainder);
-                                if (candidate[8] != expectedCheckDigit)
-                                {
-                                    // Non-mandatory mathematical failure penalty to break ties
-                                    score -= 5.0; 
-                                }
-                            }
-                        }
-                    }
                 }
                 else if (candidate.Length == 17)
                 {

@@ -18,7 +18,7 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
             _options = options?.Value ?? new OcrCorrectionOptions();
         }
 
-        [GeneratedRegex("^[A-HJ-NPR-Z0-9]{17}$")]
+        [GeneratedRegex("^[A-HJ-NPR-Z0-9]{14,20}$")]
         private static partial Regex VinPatternRegex();
 
         /// <inheritdoc/>

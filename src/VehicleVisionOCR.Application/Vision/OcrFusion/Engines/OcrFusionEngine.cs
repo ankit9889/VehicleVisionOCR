@@ -11,15 +11,18 @@ namespace VehicleVisionOCR.Application.Vision.OcrFusion.Engines
         private readonly IZoneOcrRunner _ocrRunner;
         private readonly IOcrCandidateCollector _candidateCollector;
         private readonly ICharacterVotingEngine _votingEngine;
+        private readonly VehicleVisionOCR.Application.Vision.ArtifactRecovery.Interfaces.IOcrArtifactRecoveryEngine _recoveryEngine;
 
         public OcrFusionEngine(
             IZoneOcrRunner ocrRunner,
             IOcrCandidateCollector candidateCollector,
-            ICharacterVotingEngine votingEngine)
+            ICharacterVotingEngine votingEngine,
+            VehicleVisionOCR.Application.Vision.ArtifactRecovery.Interfaces.IOcrArtifactRecoveryEngine recoveryEngine)
         {
             _ocrRunner = ocrRunner;
             _candidateCollector = candidateCollector;
             _votingEngine = votingEngine;
+            _recoveryEngine = recoveryEngine;
         }
 
         public async Task<FusionResult> ProcessZoneAsync(CroppedZone zone, OcrProfileConfig config)
@@ -59,14 +62,51 @@ namespace VehicleVisionOCR.Application.Vision.OcrFusion.Engines
             // 3. Perform mathematical probability voting on the clusters
             var fusedCandidate = _votingEngine.VoteOnClusters(clusters);
 
+            // 4. Artifact Recovery (Build nodes from clusters and alternatives)
+            var recoveryNodes = new System.Collections.Generic.List<VehicleVisionOCR.Domain.Vision.ArtifactRecovery.CharacterNode>();
+            int idx = 0;
+            foreach (var cluster in clusters)
+            {
+                var evidence = cluster.EvidenceList.OrderByDescending(e => e.Confidence).FirstOrDefault();
+                if (evidence != null && idx < fusedCandidate.Text.Length)
+                {
+                    recoveryNodes.Add(new VehicleVisionOCR.Domain.Vision.ArtifactRecovery.CharacterNode
+                    {
+                        PrimaryChar = fusedCandidate.Text[idx],
+                        Confidence = fusedCandidate.CharacterConfidences.Count > idx ? fusedCandidate.CharacterConfidences[idx].Confidence : 0,
+                        X = cluster.BoundingBoxX,
+                        Y = cluster.BoundingBoxY,
+                        Width = cluster.BoundingBoxWidth,
+                        Height = cluster.BoundingBoxHeight,
+                        Alternatives = evidence.Alternatives
+                    });
+                }
+                idx++;
+            }
+
+            var recoveryResult = _recoveryEngine.ProcessSequence(recoveryNodes, new VehicleVisionOCR.Domain.Vision.ArtifactRecovery.OcrRecoveryOptions());
+
+            if (System.IO.Directory.Exists(debugDir))
+            {
+                var rpt = new System.Text.StringBuilder();
+                rpt.AppendLine("--- ARTIFACT RECOVERY ---");
+                rpt.AppendLine($"Original: {recoveryResult.OriginalText}");
+                rpt.AppendLine($"Corrected: {recoveryResult.CorrectedText}");
+                foreach (var rep in recoveryResult.AppliedRepairs)
+                {
+                    rpt.AppendLine($"- {rep.RepairType}: {rep.MathematicalReason}");
+                }
+                System.IO.File.AppendAllText(System.IO.Path.Combine(debugDir, "ocr_trace.txt"), rpt.ToString() + "\n");
+            }
+
             sw.Stop();
 
-            // 4. Construct Final Result
+            // 5. Construct Final Result
             return new FusionResult
             {
                 Region = zone.Type,
-                WinningText = fusedCandidate.Text,
-                Confidence = fusedCandidate.AggregateConfidence,
+                WinningText = recoveryResult.CorrectedText,
+                Confidence = recoveryResult.CorrectedConfidence,
                 CharacterEvidenceClusters = clusters,
                 TotalExecutionTime = sw.Elapsed,
                 // These would normally be derived from the highest scoring individual observation

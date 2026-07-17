@@ -11,16 +11,10 @@ namespace VehicleVisionOCR.Application.VINReasoning.Rules
         {
             int length = candidate.CandidateString?.Length ?? 0;
 
-            if (length == 17)
+            if (length >= 14 && length <= 20)
             {
                 candidate.Score.LengthScore = config.ScoringWeights.Length;
-                candidate.Score.RuleBonuses.Add("Length is exactly 17 characters.");
-            }
-            else if (length == 16 && config.Allow16CharAsianChassis)
-            {
-                // Give partial or full credit depending on business requirements. Giving full here for now.
-                candidate.Score.LengthScore = config.ScoringWeights.Length;
-                candidate.Score.RuleBonuses.Add("Length is 16 characters (Asian chassis allowed).");
+                candidate.Score.RuleBonuses.Add($"Length is {length} characters.");
             }
             else
             {
@@ -28,7 +22,7 @@ namespace VehicleVisionOCR.Application.VINReasoning.Rules
                 candidate.Score.Violations.Add(new RuleViolation
                 {
                     RuleName = Name,
-                    Description = $"Invalid length ({length}). Must be 17 (or 16 if Asian chassis allowed).",
+                    Description = $"Invalid length ({length}). Must be between 14 and 20 characters.",
                     PointsDeducted = config.ScoringWeights.Length
                 });
             }

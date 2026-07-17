@@ -15,18 +15,33 @@ namespace VehicleVisionOCR.Application.Vision.ArtifactRecovery.Strategies
             var node = current.Value;
 
             // Simple heuristic: If confidence is moderate, check alternatives.
-            if (node.Confidence < 85 && node.Alternatives != null)
+            if (node.Confidence < 90 && node.Alternatives != null)
             {
-                // If there's an alternative that is geometrically known to be easily confused
                 foreach (var alt in node.Alternatives)
                 {
-                    if (IsHighlyConfusable(node.PrimaryChar, alt.Character) && alt.Confidence > node.Confidence - 20)
+                    if (IsHighlyConfusable(node.PrimaryChar, alt.Character) && alt.Confidence > 30) // if alt confidence is somewhat reasonable
                     {
-                        // In a real generic engine, we'd only do this if it fixes a structural issue 
-                        // (like '0' instead of 'O' in a position that requires digits, but this layer is domain-agnostic).
-                        // So geometric substitution here might only apply if we have a pure geometric reason.
-                        // For now, we skip generic substitutions unless we add language models.
-                        // We will return false to avoid mutating without domain knowledge.
+                        action = new RepairAction
+                        {
+                            Type = ArtifactRepairType.GeometricSubstitution,
+                            ConfidencePenalty = 0,
+                            Reason = $"Substituted '{node.PrimaryChar}' with geometrically similar '{alt.Character}' due to low primary confidence and viable alternative.",
+                            ModifiedNodes = new List<CharacterNode>
+                            {
+                                new CharacterNode
+                                {
+                                    PrimaryChar = alt.Character,
+                                    Confidence = alt.Confidence,
+                                    X = node.X,
+                                    Y = node.Y,
+                                    Width = node.Width,
+                                    Height = node.Height,
+                                    Alternatives = node.Alternatives,
+                                    SourceReference = node.SourceReference
+                                }
+                            }
+                        };
+                        return true;
                     }
                 }
             }

@@ -134,6 +134,15 @@ try
     builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.VisionIntegration.Interfaces.IVisionPipelineCoordinator, VehicleVisionOCR.Backend.Services.VisionIntegration.VisionPipelineCoordinator>();
     builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.VisionIntegration.Interfaces.IScanProcessingEngine, VehicleVisionOCR.Backend.Services.VisionIntegration.ScanProcessingEngine>();
 
+    // Register Artifact Recovery Engine and Strategies
+    builder.Services.AddScoped<VehicleVisionOCR.Application.Vision.ArtifactRecovery.Interfaces.IGeometricAnalyzer, VehicleVisionOCR.Application.Vision.ArtifactRecovery.GeometricAnalyzer>();
+    builder.Services.AddScoped<VehicleVisionOCR.Application.Vision.ArtifactRecovery.Interfaces.IArtifactRepairStrategy, VehicleVisionOCR.Application.Vision.ArtifactRecovery.Strategies.NoiseRemovalStrategy>();
+    builder.Services.AddScoped<VehicleVisionOCR.Application.Vision.ArtifactRecovery.Interfaces.IArtifactRepairStrategy, VehicleVisionOCR.Application.Vision.ArtifactRecovery.Strategies.DuplicateSuppressionStrategy>();
+    builder.Services.AddScoped<VehicleVisionOCR.Application.Vision.ArtifactRecovery.Interfaces.IArtifactRepairStrategy, VehicleVisionOCR.Application.Vision.ArtifactRecovery.Strategies.InsertionOutlierStrategy>();
+    builder.Services.AddScoped<VehicleVisionOCR.Application.Vision.ArtifactRecovery.Interfaces.IArtifactRepairStrategy, VehicleVisionOCR.Application.Vision.ArtifactRecovery.Strategies.SplitCharacterMergeStrategy>();
+    builder.Services.AddScoped<VehicleVisionOCR.Application.Vision.ArtifactRecovery.Interfaces.IArtifactRepairStrategy, VehicleVisionOCR.Application.Vision.ArtifactRecovery.Strategies.GeometricSubstitutionStrategy>();
+    builder.Services.AddScoped<VehicleVisionOCR.Application.Vision.ArtifactRecovery.Interfaces.IOcrArtifactRecoveryEngine, VehicleVisionOCR.Application.Vision.ArtifactRecovery.OcrArtifactRecoveryEngine>();
+
     builder.Services.AddSingleton<VehicleVisionOCR.Backend.BackgroundServices.ImageProcessingQueue>();
     builder.Services.AddHostedService<VehicleVisionOCR.Backend.BackgroundServices.ScanWorkflowService>();
     builder.Services.AddHostedService<VehicleVisionOCR.Backend.BackgroundServices.SystemMaintenanceService>();

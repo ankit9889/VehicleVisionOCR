@@ -50,15 +50,33 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
             // 4. ISO 3779 Check Digit (Weight: 30%)
             if (candidate.Length >= 14 && candidate.Length <= 20)
             {
-                bool isCheckDigitValid = VinCheckDigitCalculator.Validate(candidate);
-                if (isCheckDigitValid)
+                if (candidate.Length == 17)
                 {
-                    score += 30.0;
+                    bool mathValid = VinCheckDigitCalculator.IsMathValid(candidate);
+                    bool isMandatory = VinCheckDigitCalculator.IsCheckDigitMandatory(candidate);
+                    
+                    if (mathValid)
+                    {
+                        score += 30.0;
+                    }
+                    else if (isMandatory)
+                    {
+                        // Severe penalty if check digit fails for mandatory regions
+                        score -= 20.0;
+                    }
+                    else
+                    {
+                        // Failed math but not mandatory region. 
+                        // It gets 0 bonus, which implicitly penalizes it compared to a mathematically valid candidate
+                        score += 0.0;
+                    }
                 }
-                else if (candidate.Length == 17)
+                else
                 {
-                    // Severe penalty if check digit fails but string looks otherwise perfect
-                    score -= 20.0;
+                    // Non-17 character VINs (e.g., Asian chassis numbers like 16-char lengths)
+                    // They implicitly "pass" the check digit requirement since they don't have one
+                    // We reward them slightly less than a mathematically verified VIN, but enough to prevent 17-char hallucinations from overtaking them.
+                    score += 20.0; 
                 }
             }
 

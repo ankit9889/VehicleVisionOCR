@@ -39,9 +39,27 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Helpers
             if (string.IsNullOrWhiteSpace(vin)) return false;
             if (vin.Length < 14 || vin.Length > 20) return false;
 
+            bool isMandatory = IsCheckDigitMandatory(vin);
+            if (vin.Length == 16) return true; // 16-char Asian chassis numbers bypass ISO check digit math
+            if (vin.Length != 17) return true; // Other variable lengths bypass
+
+            bool matches = IsMathValid(vin);
+            
+            // If it matches, it's valid. If it doesn't match but isn't mandatory, it's still considered valid.
+            return matches || !isMandatory;
+        }
+
+        public static bool IsCheckDigitMandatory(string vin)
+        {
+            if (string.IsNullOrWhiteSpace(vin) || vin.Length < 1) return false;
             char wmiRegion = vin[0];
-            bool isCheckDigitMandatory = (wmiRegion == '1' || wmiRegion == '2' || wmiRegion == '3' || 
-                                         wmiRegion == '4' || wmiRegion == '5' || wmiRegion == 'L') && vin.Length == 17;
+            return (wmiRegion == '1' || wmiRegion == '2' || wmiRegion == '3' || 
+                    wmiRegion == '4' || wmiRegion == '5' || wmiRegion == 'L') && vin.Length == 17;
+        }
+
+        public static bool IsMathValid(string vin)
+        {
+            if (string.IsNullOrWhiteSpace(vin) || vin.Length != 17) return false;
 
             int sum = 0;
             for (int i = 0; i < vin.Length; i++)
@@ -53,21 +71,13 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Helpers
                     // Contains invalid character (I, O, Q, or special).
                     return false; 
                 }
-                if (vin.Length == 17)
-                {
-                    sum += val * Weights[i];
-                }
+                sum += val * Weights[i];
             }
-
-            if (vin.Length == 16) return true; // 16-char Asian chassis numbers bypass ISO check digit math
 
             int remainder = sum % 11;
             char expectedCheckDigit = remainder == 10 ? 'X' : (char)('0' + remainder);
 
-            bool matches = vin[8] == expectedCheckDigit;
-            
-            // If it matches, it's valid. If it doesn't match but isn't mandatory, it's still considered valid.
-            return matches || !isCheckDigitMandatory;
+            return vin[8] == expectedCheckDigit;
         }
     }
 }

@@ -18,7 +18,7 @@ namespace VehicleVisionOCR.Application.VINReasoning
 
         public bool Calculate(string vin)
         {
-            if (string.IsNullOrEmpty(vin) || vin.Length != 17)
+            if (string.IsNullOrEmpty(vin) || (vin.Length != 17 && vin.Length != 16 && vin.Length != 14))
                 return false;
 
             int sum = 0;

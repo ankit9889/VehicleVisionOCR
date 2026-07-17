@@ -48,7 +48,7 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
             }
 
             // 4. ISO 3779 Check Digit (Weight: 30%)
-            if (candidate.Length == 17 || candidate.Length == 16)
+            if (candidate.Length == 17 || candidate.Length == 16 || candidate.Length == 14)
             {
                 bool isCheckDigitValid = VinCheckDigitCalculator.Validate(candidate);
                 if (isCheckDigitValid)
@@ -63,7 +63,7 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
             }
 
             // 5. Positional Constraints Penalty
-            if (candidate.Length == 17 || candidate.Length == 16)
+            if (candidate.Length == 17 || candidate.Length == 16 || candidate.Length == 14)
             {
                 // I, O, Q are never allowed in a VIN
                 for (int i = 0; i < candidate.Length; i++)

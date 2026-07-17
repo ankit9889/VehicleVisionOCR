@@ -563,15 +563,16 @@ namespace VehicleVisionOCR.OCR.Tesseract
                 {
                     cand.Score -= 300; // Heavy penalty for repetitive noise
                 }
-
+                
                 // Forbidden words (heavy penalty to prevent header lines from winning)
                 if (cand.OriginalText.Contains("FRAME") || cand.OriginalText.Contains("NO") || cand.OriginalText.Contains("DATE"))
                 {
                     cand.Score -= 100;
                 }
 
-                // Minor Forbidden words (only penalize if NOT exactly 17 chars)
-                if (cand.Text.Length != 17 && (cand.Text.Contains("2024") || cand.Text.Contains("2025") || cand.Text.Contains("2026") || 
+                // Minor Forbidden words (only penalize if NOT a valid VIN length)
+                if (cand.Text.Length != 17 && cand.Text.Length != 16 && cand.Text.Length != 14 && 
+                   (cand.Text.Contains("2024") || cand.Text.Contains("2025") || cand.Text.Contains("2026") || 
                     cand.Text.Contains("MODEL") || cand.Text.Contains("CB")))
                 {
                     cand.Score -= 50;

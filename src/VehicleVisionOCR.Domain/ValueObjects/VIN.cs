@@ -14,8 +14,8 @@ namespace VehicleVisionOCR.Domain.ValueObjects
             if (string.IsNullOrWhiteSpace(value))
                 throw new ArgumentException("VIN cannot be empty.", nameof(value));
             
-            if (value.Trim().Length != 17)
-                throw new ArgumentException("VIN must be exactly 17 characters long.", nameof(value));
+            if (value.Trim().Length < 14 || value.Trim().Length > 17)
+                throw new ArgumentException("VIN must be between 14 and 17 characters long.", nameof(value));
 
             Value = value.Trim().ToUpperInvariant();
         }

@@ -572,7 +572,7 @@ namespace VehicleVisionOCR.OCR.Tesseract
 
                 // Minor Forbidden words (only penalize if NOT exactly 17 chars)
                 if (cand.Text.Length != 17 && (cand.Text.Contains("2024") || cand.Text.Contains("2025") || cand.Text.Contains("2026") || 
-                    cand.Text.Contains("MODEL") || cand.Text.Contains("CB") || cand.Text.Contains("PB")))
+                    cand.Text.Contains("MODEL") || cand.Text.Contains("CB")))
                 {
                     cand.Score -= 50;
                 }

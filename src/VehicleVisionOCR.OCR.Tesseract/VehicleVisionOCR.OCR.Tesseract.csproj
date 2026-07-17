@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\VehicleVisionOCR.OCR.Core\VehicleVisionOCR.OCR.Core.csproj" />
+    <ProjectReference Include="..\VehicleVisionOCR.Domain\VehicleVisionOCR.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

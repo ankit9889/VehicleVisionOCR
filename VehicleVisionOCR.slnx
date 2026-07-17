@@ -6,6 +6,7 @@
   <Folder Name="/src/">
     <Project Path="src/VehicleVisionOCR.Application/VehicleVisionOCR.Application.csproj" />
     <Project Path="src/VehicleVisionOCR.Domain/VehicleVisionOCR.Domain.csproj" />
+    <Project Path="src/VehicleVisionOCR.Infrastructure.Vision/VehicleVisionOCR.Infrastructure.Vision.csproj" />
     <Project Path="src/VehicleVisionOCR.Infrastructure/VehicleVisionOCR.Infrastructure.csproj" />
     <Project Path="src/VehicleVisionOCR.OCR.Core/VehicleVisionOCR.OCR.Core.csproj" />
     <Project Path="src/VehicleVisionOCR.OCR.Tesseract/VehicleVisionOCR.OCR.Tesseract.csproj" />
@@ -18,6 +19,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/VehicleVisionOCR.Application.Tests/VehicleVisionOCR.Application.Tests.csproj" />
+    <Project Path="tests/VehicleVisionOCR.Benchmarks/VehicleVisionOCR.Benchmarks.csproj" />
     <Project Path="tests/VehicleVisionOCR.Domain.Tests/VehicleVisionOCR.Domain.Tests.csproj" />
     <Project Path="tests/VehicleVisionOCR.Infrastructure.Tests/VehicleVisionOCR.Infrastructure.Tests.csproj" />
     <Project Path="tests/VehicleVisionOCR.UI.Tests/VehicleVisionOCR.UI.Tests.csproj" />

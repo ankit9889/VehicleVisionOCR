@@ -36,28 +36,30 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Helpers
         /// <returns>True if valid or if from a region where check digits are not enforced; otherwise, false.</returns>
         public static bool Validate(string vin)
         {
-            if (string.IsNullOrWhiteSpace(vin) || vin.Length != 17) return false;
+            if (string.IsNullOrWhiteSpace(vin)) return false;
+            if (vin.Length != 17 && vin.Length != 16) return false;
 
-            // Check digit is only mandatory in North America (1, 2, 3, 4, 5) and China (L).
-            // For other regions (like India - M, Japan - J, Europe - S, W, etc.), we bypass strict validation
-            // to avoid rejecting valid international VINs.
             char wmiRegion = vin[0];
-            bool isCheckDigitMandatory = wmiRegion == '1' || wmiRegion == '2' || wmiRegion == '3' || 
-                                         wmiRegion == '4' || wmiRegion == '5' || wmiRegion == 'L';
+            bool isCheckDigitMandatory = (wmiRegion == '1' || wmiRegion == '2' || wmiRegion == '3' || 
+                                         wmiRegion == '4' || wmiRegion == '5' || wmiRegion == 'L') && vin.Length == 17;
 
             int sum = 0;
-            for (int i = 0; i < 17; i++)
+            for (int i = 0; i < vin.Length; i++)
             {
                 char c = vin[i];
                 int val = GetCharValue(c);
                 if (val == -1)
                 {
                     // Contains invalid character (I, O, Q, or special).
-                    // This is invalid globally, so we always return false here.
                     return false; 
                 }
-                sum += val * Weights[i];
+                if (vin.Length == 17)
+                {
+                    sum += val * Weights[i];
+                }
             }
+
+            if (vin.Length == 16) return true; // 16-char Asian chassis numbers bypass ISO check digit math
 
             int remainder = sum % 11;
             char expectedCheckDigit = remainder == 10 ? 'X' : (char)('0' + remainder);

@@ -10,7 +10,7 @@ namespace VehicleVisionOCR.Domain.Entities
     /// </summary>
     public class Vehicle : AuditableEntity
     {
-        public VIN? Vin { get; set; }
+        public VehicleVisionOCR.Domain.ValueObjects.VIN? Vin { get; set; }
         public RegistrationNumber? RegistrationNumber { get; set; }
         public EngineNumber? EngineNumber { get; set; }
         public ChassisNumber? ChassisNumber { get; set; }

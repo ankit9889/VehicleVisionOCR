@@ -80,33 +80,34 @@ namespace VehicleVisionOCR.Backend.BackgroundServices
         private async Task ProcessImageAsync(QueuedImage queuedImage, CancellationToken token)
         {
             using var scope = _serviceProvider.CreateScope();
-            var ocrManager = scope.ServiceProvider.GetRequiredService<IOcrManager>();
+            var processingEngine = scope.ServiceProvider.GetRequiredService<VehicleVisionOCR.Backend.Services.VisionIntegration.Interfaces.IScanProcessingEngine>();
             var vehicleRepo = scope.ServiceProvider.GetRequiredService<IVehicleRepository>();
             var scanRepo = scope.ServiceProvider.GetRequiredService<IScanRepository>();
             var validationEngine = scope.ServiceProvider.GetRequiredService<IValidationEngine>();
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
             var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<ScannerHub>>();
 
-            var ocrCorrectionCoordinator = scope.ServiceProvider.GetRequiredService<VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.IOcrCorrectionCoordinator>();
-
             try
             {
-                _logger.LogInformation("Starting OCR processing on queued image.");
+                _logger.LogInformation("Starting isolated OCR processing layer on queued image.");
                 
-                var request = new VehicleVisionOCR.OCR.Core.Models.OcrRequest 
-                { 
-                    ImageData = queuedImage.ImageData
-                };
-                
-                var response = await ocrManager.ProcessAsync(request, VehicleVisionOCR.OCR.Core.Enums.OcrEngineType.Tesseract);
+                var processingResult = await processingEngine.ProcessScanAsync(queuedImage.ImageData, token);
 
-                if (response.Status != VehicleVisionOCR.OCR.Core.Enums.OcrStatus.Success || response.Result == null)
+                if (!processingResult.IsSuccess || string.IsNullOrEmpty(processingResult.ExtractedVin))
                 {
-                    _logger.LogWarning("OCR failed to extract data.");
+                    _logger.LogWarning("Isolated OCR processing engine failed to extract valid data. Diagnostic: {Message}", processingResult.DiagnosticMessage);
+                    await SendFeedbackAsync(queuedImage.ScannerId, VehicleVisionOCR.Scanner.Core.Enums.BeepPattern.Error);
+                    
+                    // Broadcast failure to React UI
+                    await hubContext.Clients.All.SendAsync("OnScanProcessed", new 
+                    {
+                        Success = false,
+                        Message = processingResult.DiagnosticMessage ?? "Validation failed. Please verify the data manually."
+                    });
                     return;
                 }
 
-                _logger.LogInformation($"OCR completed. Confidence: {response.Result.OverallConfidence.Percentage}%");
+                _logger.LogInformation($"OCR completed via {processingResult.PipelineUsed}. Confidence: {processingResult.Confidence}%");
 
                 // Map to domain entity and validate
                 var vehicle = new Vehicle
@@ -115,45 +116,19 @@ namespace VehicleVisionOCR.Backend.BackgroundServices
                     SyncStatus = VehicleVisionOCR.Domain.Enums.SyncStatus.Pending
                 };
 
-                foreach (var field in response.Result.ExtractedFields)
+                vehicle.Vin = new VIN(processingResult.ExtractedVin);
+                
+                if (!string.IsNullOrWhiteSpace(processingResult.ExtractedRegistrationNumber))
                 {
-                    if (field.Value == "NULL" || string.IsNullOrWhiteSpace(field.Value))
-                        continue;
-
-                    if (field.Key == "VIN")
-                    {
-                        var vinResult = await ocrCorrectionCoordinator.ProcessFieldAsync(VehicleVisionOCR.Backend.Services.OcrCorrection.Enums.TargetFieldType.VIN, field.Value, response.Result.OverallConfidence.Percentage);
-                        if (vinResult.IsValid)
-                        {
-                            vehicle.Vin = new VIN(vinResult.CorrectedText);
-                        }
-                    }
-                    else if (field.Key == "LicensePlate" || field.Key == "Barcode") 
-                    {
-                        vehicle.RegistrationNumber = new RegistrationNumber(field.Value);
-                    }
-                    else if (field.Key == "Color")
-                    {
-                        var colorResult = await ocrCorrectionCoordinator.ProcessFieldAsync(VehicleVisionOCR.Backend.Services.OcrCorrection.Enums.TargetFieldType.Color, field.Value, response.Result.OverallConfidence.Percentage);
-                        if (colorResult.IsValid)
-                        {
-                            vehicle.Color = colorResult.CorrectedText;
-                        }
-                    }
+                    vehicle.RegistrationNumber = new RegistrationNumber(processingResult.ExtractedRegistrationNumber);
                 }
 
-                // If color was not found in specific ExtractedFields, attempt a fallback run against the entire RawText
-                if (string.IsNullOrWhiteSpace(vehicle.Color) && !string.IsNullOrWhiteSpace(response.Result.RawText))
+                if (!string.IsNullOrWhiteSpace(processingResult.ExtractedColor))
                 {
-                    var colorResult = await ocrCorrectionCoordinator.ProcessFieldAsync(VehicleVisionOCR.Backend.Services.OcrCorrection.Enums.TargetFieldType.Color, response.Result.RawText, response.Result.OverallConfidence.Percentage);
-                    if (colorResult.IsValid && colorResult.WasCorrected)
-                    {
-                        vehicle.Color = colorResult.CorrectedText;
-                    }
+                    vehicle.Color = processingResult.ExtractedColor;
                 }
 
-                bool isValid = true;
-                if (vehicle.Vin != null) isValid = isValid && validationEngine.ValidateVin(vehicle.Vin.Value);
+                bool isValid = validationEngine.ValidateVin(vehicle.Vin.Value);
                 if (vehicle.RegistrationNumber != null) isValid = isValid && validationEngine.ValidateLicensePlate(vehicle.RegistrationNumber.Value);
                 
                 if (isValid)
@@ -188,8 +163,8 @@ namespace VehicleVisionOCR.Backend.BackgroundServices
                                 VehicleId = existingVehicle.Id,
                                 ImageFileName = savedFileName,
                                 Message = $"Duplicate Barcode Detected: {vehicle.RegistrationNumber.Value}.",
-                                RawText = response.Result.RawText,
-                                ExtractedFields = response.Result.ExtractedFields,
+                                RawText = processingResult.RawText,
+                                ExtractedFields = processingResult.ExtractedFields,
                                 RegistrationNumber = vehicle.RegistrationNumber.Value,
                                 Color = vehicle.Color
                             });
@@ -203,7 +178,7 @@ namespace VehicleVisionOCR.Backend.BackgroundServices
                     {
                         VehicleId = vehicle.Id,
                         Status = VehicleVisionOCR.Domain.Enums.ScanStatus.Initiated, // Wait for user to confirm in UI
-                        RawExtractedText = response.Result.RawText
+                        RawExtractedText = processingResult.RawText
                     };
 
                     // Save Image
@@ -244,9 +219,9 @@ namespace VehicleVisionOCR.Backend.BackgroundServices
                         Vin = vehicle.Vin?.Value,
                         RegistrationNumber = vehicle.RegistrationNumber?.Value,
                         Color = vehicle.Color,
-                        Confidence = response.Result.OverallConfidence.Percentage,
+                        Confidence = processingResult.Confidence,
                         ImageId = scan.Images.FirstOrDefault()?.Id,
-                        RawText = response.Result.RawText
+                        RawText = processingResult.RawText
                     });
                 }
                 else
@@ -259,8 +234,8 @@ namespace VehicleVisionOCR.Backend.BackgroundServices
                     {
                         Success = false,
                         Message = "Validation failed. Please verify the data manually.",
-                        RawText = response.Result.RawText,
-                        ExtractedFields = response.Result.ExtractedFields
+                        RawText = processingResult.RawText,
+                        ExtractedFields = processingResult.ExtractedFields
                     });
                 }
             }

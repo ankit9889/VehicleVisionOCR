@@ -449,19 +449,8 @@ namespace VehicleVisionOCR.OCR.Tesseract
                 }
 
                 // 2. VIS (Serial Number) Rules: ONLY FOR EXACTLY 17-CHAR VINS
-                // For standard 17-char VINs, the last 4-6 characters are numeric.
-                // We fix S->5, B->8, P->0, Z->2 to prevent alphanumeric confusion.
-                if (chars.Length == 17)
-                {
-                    int visStartIndex = Math.Max(0, chars.Length - 6);
-                    for (int i = visStartIndex; i < chars.Length; i++)
-                    {
-                        if (chars[i] == 'S') chars[i] = '5';
-                        if (chars[i] == 'B') chars[i] = '8';
-                        if (chars[i] == 'P') chars[i] = '0'; // P is usually read instead of 0
-                        if (chars[i] == 'Z') chars[i] = '2';
-                    }
-                }
+                // We no longer forcefully mutate P to 0, S to 5, etc. here.
+                // The candidate scoring engine and confusion matrix handles this gracefully.
                 
                 corrected = new string(chars);
             }

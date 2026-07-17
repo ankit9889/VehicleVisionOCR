@@ -14,7 +14,8 @@ namespace VehicleVisionOCR.Backend.Controllers
 
         public LogsController()
         {
-            _logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
+            var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VehicleVisionOCR");
+            _logPath = Path.Combine(appData, "Logs");
         }
 
         [HttpGet]

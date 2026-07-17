@@ -143,8 +143,8 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     int bottomY = Math.Min(height - 10, barcodeBottomY + 5); // 5px padding below barcode
                     int bottomHeight = height - bottomY;
 
-                    // Apply a small horizontal margin to remove border artifacts (which cause extra '0' or '1')
-                    int hMargin = Math.Min(15, width / 20); 
+                    // Remove horizontal margin to prevent chopping edge-to-edge text (VINs often span the entire label)
+                    int hMargin = 0; 
                     int safeWidth = width - (hMargin * 2);
 
                     using var topMatRaw = new Mat(srcMat, new OpenCvSharp.Rect(hMargin, 0, safeWidth, topHeight));
@@ -294,8 +294,8 @@ namespace VehicleVisionOCR.OCR.Tesseract
             try
             {
                 using var engine = new TesseractEngine(_tessDataPath, "eng", EngineMode.LstmOnly);
-                // For exact cropped regions that are a single line of text
-                engine.DefaultPageSegMode = PageSegMode.SingleLine;
+                // Use Auto instead of SingleLine because slightly skewed or noisy text gets mangled into garbage (e.g. DEEP -> Deen)
+                engine.DefaultPageSegMode = PageSegMode.Auto;
                 
                 string bestText = "";
                 float bestConfidence = -1f;

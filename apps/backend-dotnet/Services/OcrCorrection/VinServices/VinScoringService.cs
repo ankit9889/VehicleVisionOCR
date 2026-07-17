@@ -28,7 +28,7 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
             score -= (candidateObj.Substitutions * 2.0);
 
             // 2. Exact Pattern Match (Weight: 30%)
-            if (candidate.Length == 17 && VinPatternRegex().IsMatch(candidate))
+            if (Regex.IsMatch(candidate, "^[A-HJ-NPR-Z0-9]{14,25}$"))
             {
                 score += 30.0;
             }
@@ -40,14 +40,14 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
             }
 
             // 4. ISO 3779 Check Digit (Weight: 30%)
-            if (candidate.Length == 17)
+            if (candidate.Length == 17 || candidate.Length == 16)
             {
                 bool isCheckDigitValid = VinCheckDigitCalculator.Validate(candidate);
                 if (isCheckDigitValid)
                 {
                     score += 30.0;
                 }
-                else
+                else if (candidate.Length == 17)
                 {
                     // Severe penalty if check digit fails but string looks otherwise perfect
                     score -= 20.0;
@@ -55,10 +55,10 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
             }
 
             // 5. Positional Constraints Penalty
-            if (candidate.Length == 17)
+            if (candidate.Length == 17 || candidate.Length == 16)
             {
                 // I, O, Q are never allowed in a VIN
-                for (int i = 0; i < 17; i++)
+                for (int i = 0; i < candidate.Length; i++)
                 {
                     if (candidate[i] == 'I' || candidate[i] == 'O' || candidate[i] == 'Q')
                     {
@@ -66,19 +66,28 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
                     }
                 }
 
-                // Characters 14-17 MUST be numeric globally (12-17 for NA, but we enforce 14-17 strictly)
-                for (int i = 13; i < 17; i++)
+                // For 17-char VINs, last 4-6 must be numeric.
+                // For 16-char VINs, we assume the last 5-6 are the serial number.
+                int visStartIndex = candidate.Length == 17 ? 11 : 10;
+                for (int i = visStartIndex; i < candidate.Length; i++)
                 {
                     if (char.IsLetter(candidate[i]))
                     {
-                        score -= 10.0;
+                        score -= (i >= visStartIndex + 2) ? 10.0 : 5.0;
                     }
                 }
-                
-                // For Check Digit (position 9, index 8), must be 0-9 or X
-                if (char.IsLetter(candidate[8]) && candidate[8] != 'X')
+
+                // For Check Digit (position 9, index 8), if mandatory, it must be 0-9 or X
+                char wmiRegion = candidate[0];
+                bool isCheckDigitMandatory = (wmiRegion == '1' || wmiRegion == '2' || wmiRegion == '3' || 
+                                             wmiRegion == '4' || wmiRegion == '5' || wmiRegion == 'L') && candidate.Length == 17;
+
+                if (isCheckDigitMandatory)
                 {
-                    score -= 10.0;
+                    if (char.IsLetter(candidate[8]) && candidate[8] != 'X')
+                    {
+                        score -= 10.0;
+                    }
                 }
             }
 

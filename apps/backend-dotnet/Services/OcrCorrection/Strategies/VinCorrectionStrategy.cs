@@ -112,10 +112,10 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Strategies
                 ConfidenceLevel = DetermineConfidenceLevel(best.Score)
             };
 
-            if (best.Candidate.Length != 17)
+            if (best.Candidate.Length < 14 || best.Candidate.Length > 25)
             {
                 result.IsValid = false;
-                result.FailureReason = $"Invalid length ({best.Candidate.Length} chars). Expected 17.";
+                result.FailureReason = $"Invalid length ({best.Candidate.Length} chars). Expected 14 to 25.";
                 return result;
             }
 
@@ -126,7 +126,7 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Strategies
                 return result;
             }
 
-            if (!VinCheckDigitCalculator.Validate(best.Candidate))
+            if (best.Candidate.Length == 17 && !VinCheckDigitCalculator.Validate(best.Candidate))
             {
                 result.IsValid = false;
                 result.FailureReason = "Failed ISO 3779 Modulus 11 Check Digit validation.";

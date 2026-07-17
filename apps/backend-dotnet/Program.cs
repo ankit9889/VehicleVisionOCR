@@ -119,6 +119,21 @@ try
 
     // Register Backend Specific Services
     builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.IValidationEngine, VehicleVisionOCR.Backend.Services.ValidationEngine>();
+    
+    // Register Phase 7 Vision Integration Services
+    builder.Services.AddSingleton(System.Threading.Channels.Channel.CreateUnbounded<VehicleVisionOCR.Backend.Services.VisionIntegration.Models.ComparisonResult>());
+    builder.Services.AddSingleton(provider => provider.GetRequiredService<System.Threading.Channels.Channel<VehicleVisionOCR.Backend.Services.VisionIntegration.Models.ComparisonResult>>().Writer);
+    builder.Services.AddSingleton(provider => provider.GetRequiredService<System.Threading.Channels.Channel<VehicleVisionOCR.Backend.Services.VisionIntegration.Models.ComparisonResult>>().Reader);
+    builder.Services.AddSingleton<VehicleVisionOCR.Backend.Services.VisionIntegration.MigrationStatisticsService>();
+    builder.Services.AddHostedService<VehicleVisionOCR.Backend.Services.VisionIntegration.MigrationStatisticsBackgroundService>();
+    
+    builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.VisionIntegration.PipelineComparisonService>();
+    builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.VisionIntegration.ResultDecisionService>();
+    builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.VisionIntegration.LegacyPipelineAdapter>();
+    builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.VisionIntegration.ModernVisionPipeline>();
+    builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.VisionIntegration.Interfaces.IVisionPipelineCoordinator, VehicleVisionOCR.Backend.Services.VisionIntegration.VisionPipelineCoordinator>();
+    builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.VisionIntegration.Interfaces.IScanProcessingEngine, VehicleVisionOCR.Backend.Services.VisionIntegration.ScanProcessingEngine>();
+
     builder.Services.AddSingleton<VehicleVisionOCR.Backend.BackgroundServices.ImageProcessingQueue>();
     builder.Services.AddHostedService<VehicleVisionOCR.Backend.BackgroundServices.ScanWorkflowService>();
     builder.Services.AddHostedService<VehicleVisionOCR.Backend.BackgroundServices.SystemMaintenanceService>();

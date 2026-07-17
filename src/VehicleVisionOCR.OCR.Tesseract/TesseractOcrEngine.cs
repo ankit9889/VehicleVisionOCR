@@ -571,7 +571,7 @@ namespace VehicleVisionOCR.OCR.Tesseract
                 }
 
                 // Minor Forbidden words (only penalize if NOT a valid VIN length)
-                if (cand.Text.Length != 17 && cand.Text.Length != 16 && cand.Text.Length != 14 && 
+                if ((cand.Text.Length < 14 || cand.Text.Length > 20) && 
                    (cand.Text.Contains("2024") || cand.Text.Contains("2025") || cand.Text.Contains("2026") || 
                     cand.Text.Contains("MODEL") || cand.Text.Contains("CB")))
                 {

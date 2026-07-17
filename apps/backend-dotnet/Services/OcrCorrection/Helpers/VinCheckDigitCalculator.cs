@@ -37,7 +37,7 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Helpers
         public static bool Validate(string vin)
         {
             if (string.IsNullOrWhiteSpace(vin)) return false;
-            if (vin.Length != 17 && vin.Length != 16 && vin.Length != 14) return false;
+            if (vin.Length < 14 || vin.Length > 20) return false;
 
             char wmiRegion = vin[0];
             bool isCheckDigitMandatory = (wmiRegion == '1' || wmiRegion == '2' || wmiRegion == '3' || 

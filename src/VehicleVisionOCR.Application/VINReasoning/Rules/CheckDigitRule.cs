@@ -16,7 +16,7 @@ namespace VehicleVisionOCR.Application.VINReasoning.Rules
 
         public void Evaluate(VinCandidate candidate, VinReasoningConfig config)
         {
-            if (string.IsNullOrEmpty(candidate.CandidateString) || (candidate.CandidateString.Length != 17 && candidate.CandidateString.Length != 16 && candidate.CandidateString.Length != 14))
+            if (string.IsNullOrEmpty(candidate.CandidateString) || candidate.CandidateString.Length < 14 || candidate.CandidateString.Length > 20)
             {
                 candidate.Score.CheckDigitScore = 0;
                 return; // Length rule will handle the violation

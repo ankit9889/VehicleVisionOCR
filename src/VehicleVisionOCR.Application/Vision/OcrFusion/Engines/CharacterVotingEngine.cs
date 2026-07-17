@@ -55,6 +55,43 @@ namespace VehicleVisionOCR.Application.Vision.OcrFusion.Engines
                     }
                     
                     charScores[evidence.Character] += prob; // Accumulate probabilities for the same character
+
+                    // Process optional ChoiceIterator alternatives if they were successfully collected
+                    if (evidence.Alternatives != null && evidence.Alternatives.Count > 0)
+                    {
+                        foreach (var alt in evidence.Alternatives)
+                        {
+                            var altEvidence = new CharacterEvidence
+                            {
+                                Character = alt.Character,
+                                Confidence = alt.Confidence,
+                                X = evidence.X,
+                                Y = evidence.Y,
+                                Width = evidence.Width,
+                                Height = evidence.Height,
+                                SourcePassId = evidence.SourcePassId,
+                                SourcePageSegmentationMode = evidence.SourcePageSegmentationMode,
+                                SourceScale = evidence.SourceScale,
+                                SourcePreprocessing = evidence.SourcePreprocessing,
+                                LineIndex = evidence.LineIndex,
+                                WordIndex = evidence.WordIndex
+                            };
+
+                            // The probability engine will naturally give this a consensus bonus if it matches 
+                            // the primary character of another OCR pass in the same cluster.
+                            double altProb = _probabilityEngine.CalculateCharacterProbability(altEvidence, cluster, assumedTotalPasses);
+                            
+                            // Apply a slight penalty because it was ranked as an alternative, not the primary
+                            altProb *= 0.8; 
+
+                            if (!charScores.ContainsKey(alt.Character))
+                            {
+                                charScores[alt.Character] = 0;
+                            }
+                            
+                            charScores[alt.Character] += altProb;
+                        }
+                    }
                 }
 
                 // 2. Apply Confusion Matrix Penalty/Bonus

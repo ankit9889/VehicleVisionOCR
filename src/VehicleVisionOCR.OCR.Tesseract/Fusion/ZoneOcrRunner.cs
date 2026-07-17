@@ -85,10 +85,16 @@ namespace VehicleVisionOCR.OCR.Tesseract.Fusion
                 observation.AverageConfidence = page.GetMeanConfidence();
 
                 // 3. Extract Character-Level Evidence using Iterator
+                int currentLine = 0;
+                int currentWord = 0;
+
                 using var iter = page.GetIterator();
                 iter.Begin();
                 do
                 {
+                    if (iter.IsAtBeginningOf(PageIteratorLevel.TextLine)) currentLine++;
+                    if (iter.IsAtBeginningOf(PageIteratorLevel.Word)) currentWord++;
+
                     if (iter.TryGetBoundingBox(PageIteratorLevel.Symbol, out var bounds))
                     {
                         string symbol = iter.GetText(PageIteratorLevel.Symbol);
@@ -100,7 +106,7 @@ namespace VehicleVisionOCR.OCR.Tesseract.Fusion
                             int origW = (int)(bounds.Width / scale);
                             int origH = (int)(bounds.Height / scale);
 
-                            observation.Characters.Add(new CharacterEvidence
+                            var evidence = new CharacterEvidence
                             {
                                 Character = symbol[0],
                                 Confidence = iter.GetConfidence(PageIteratorLevel.Symbol),
@@ -111,8 +117,38 @@ namespace VehicleVisionOCR.OCR.Tesseract.Fusion
                                 SourcePassId = observation.PassId,
                                 SourcePageSegmentationMode = psm,
                                 SourceScale = scale,
-                                SourcePreprocessing = preprocessingMethod
-                            });
+                                SourcePreprocessing = preprocessingMethod,
+                                LineIndex = currentLine,
+                                WordIndex = currentWord
+                            };
+
+                            // Try to get ChoiceIterator safely as optional evidence
+                            try
+                            {
+                                using var choiceIter = iter.GetChoiceIterator();
+                                if (choiceIter != null)
+                                {
+                                    do
+                                    {
+                                        string choiceText = choiceIter.GetText();
+                                        if (!string.IsNullOrEmpty(choiceText) && choiceText.Length > 0)
+                                        {
+                                            evidence.Alternatives.Add(new CharacterChoice
+                                            {
+                                                Character = choiceText[0],
+                                                Confidence = choiceIter.GetConfidence()
+                                            });
+                                        }
+                                    } while (choiceIter.Next());
+                                }
+                            }
+                            catch
+                            {
+                                // ChoiceIterator is treated as an optional evidence source.
+                                // If it throws due to engine version/support, we silently ignore and proceed.
+                            }
+
+                            observation.Characters.Add(evidence);
                         }
                     }
                 } while (iter.Next(PageIteratorLevel.Symbol));

@@ -485,7 +485,7 @@ namespace VehicleVisionOCR.OCR.Tesseract
                 var lineGroups = new List<List<DetectedText>>();
                 foreach (var dt in detectedTexts.OrderBy(d => d.Y))
                 {
-                    var tolerance = Math.Max(15, dt.Height / 2);
+                    var tolerance = Math.Max(10, dt.Height / 3);
                     var group = lineGroups.FirstOrDefault(g => Math.Abs(g.First().Y - dt.Y) < tolerance);
                     if (group != null) group.Add(dt);
                     else lineGroups.Add(new List<DetectedText> { dt });
@@ -531,15 +531,15 @@ namespace VehicleVisionOCR.OCR.Tesseract
                 // Length 16-17 is standard
                 if (cand.Text.Length == 17)
                 {
-                    cand.Score += 40;
+                    cand.Score += 25;
                 }
                 else if (cand.Text.Length == 16)
                 {
-                    cand.Score += 35; 
+                    cand.Score += 25; 
                 }
                 else if (cand.Text.Length >= 14 && cand.Text.Length <= 20)
                 {
-                    cand.Score += 25; // Valid generic barcode length
+                    cand.Score += 20; // Valid generic barcode length
                 }
 
                 // Barcode bleed penalty (Tesseract reading barcode lines as I or L)
@@ -577,7 +577,7 @@ namespace VehicleVisionOCR.OCR.Tesseract
                 }
 
                 // Strict Regex (No I, O, Q allowed in standard VIN)
-                if (Regex.IsMatch(cand.Text, @"^[A-HJ-NPR-Z0-9]{17}$"))
+                if (Regex.IsMatch(cand.Text, @"^[A-HJ-NPR-Z0-9]{14,20}$"))
                 {
                     cand.Score += 20;
                 }
@@ -598,6 +598,12 @@ namespace VehicleVisionOCR.OCR.Tesseract
                 if (Regex.IsMatch(cand.OriginalText, @"[a-z]"))
                 {
                     cand.Score -= 30;
+                }
+
+                // Reward standard OCR line engine over manual spatial weaving
+                if (cand.Source == "ExactVIN")
+                {
+                    cand.Score += 30;
                 }
 
                 // Decoded barcode match boost

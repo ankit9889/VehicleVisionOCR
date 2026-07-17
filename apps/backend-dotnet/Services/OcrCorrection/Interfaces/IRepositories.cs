@@ -25,4 +25,19 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces
         public Task<IEnumerable<string>> GetActiveColorsAsync()
             => Task.FromResult<IEnumerable<string>>(new[] { "BLACK", "WHITE", "RED", "BLUE", "SILVER", "GREY", "DEEP BLUE METALLIC", "LUNAR SILVER METALLIC" });
     }
+
+    public class DbColorRepository : IColorRepository
+    {
+        private readonly VehicleVisionOCR.Infrastructure.Persistence.ApplicationDbContext _db;
+        public DbColorRepository(VehicleVisionOCR.Infrastructure.Persistence.ApplicationDbContext db)
+        {
+            _db = db;
+        }
+        public async Task<IEnumerable<string>> GetActiveColorsAsync()
+        {
+            var list = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+                System.Linq.Queryable.Select(_db.VehicleColors, c => c.Name));
+            return list;
+        }
+    }
 }

@@ -96,9 +96,9 @@ try
     // Color Pipeline
     builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.IOcrCorrectionStrategy, VehicleVisionOCR.Backend.Services.OcrCorrection.Strategies.ColorCorrectionStrategy>();
 
-    // Mock Repositories for WMI and Color (replace with EF Core implementations in production)
+    // Mock Repository for WMI, DB Repository for Colors
     builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.IWmiRepository, VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.MockWmiRepository>();
-    builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.IColorRepository, VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.MockColorRepository>();
+    builder.Services.AddScoped<VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.IColorRepository, VehicleVisionOCR.Backend.Services.OcrCorrection.Interfaces.DbColorRepository>();
 
     // Register OCR Framework and Tesseract Plugin
     builder.Services.AddOcrFramework();
@@ -158,18 +158,21 @@ try
             );
         ");
 
-        // Seed Default Colors
-        if (!db.VehicleColors.Any())
+        // Seed Default Colors if not present
+        var requiredColors = new[] { 
+            "ATHLETIC BLUE METALLIC", "PEARL IGNEOUS BLACK", "MATTE AXIS GREY METALLIC", 
+            "PEARL SIREN BLUE", "SPORTS RED", "PEARL SNOW WHITE", "RACING GREEN", 
+            "ALPINE WHITE", "DEEP SAPPHIRE BLUE METALLIC" 
+        };
+
+        foreach (var color in requiredColors)
         {
-            db.VehicleColors.AddRange(
-                new VehicleVisionOCR.Domain.Entities.VehicleColor { Name = "ATHLETIC BLUE METALLIC" },
-                new VehicleVisionOCR.Domain.Entities.VehicleColor { Name = "PEARL IGNEOUS BLACK" },
-                new VehicleVisionOCR.Domain.Entities.VehicleColor { Name = "MATTE AXIS GREY METALLIC" },
-                new VehicleVisionOCR.Domain.Entities.VehicleColor { Name = "PEARL SIREN BLUE" },
-                new VehicleVisionOCR.Domain.Entities.VehicleColor { Name = "SPORTS RED" }
-            );
-            db.SaveChanges();
+            if (!db.VehicleColors.Any(c => c.Name == color))
+            {
+                db.VehicleColors.Add(new VehicleVisionOCR.Domain.Entities.VehicleColor { Name = color });
+            }
         }
+        db.SaveChanges();
     }
 
     // Configure the HTTP request pipeline.

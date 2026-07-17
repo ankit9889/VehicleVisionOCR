@@ -430,56 +430,6 @@ namespace VehicleVisionOCR.OCR.Tesseract
             return dict;
         }
 
-        private string ApplyOcrCorrections(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text)) return text;
-            var corrected = text;
-
-            // --- NEW: VIN-Specific Smart Corrections ---
-            if (corrected.Length >= 11 && corrected.Length <= 25)
-            {
-                char[] chars = corrected.ToCharArray();
-                
-                // 1. Global VIN Rules: I, O, Q are NEVER allowed in a VIN.
-                for (int i = 0; i < chars.Length; i++)
-                {
-                    if (chars[i] == 'I') chars[i] = '1';
-                    if (chars[i] == 'O') chars[i] = '0';
-                    if (chars[i] == 'Q') chars[i] = '0';
-                }
-
-                // 2. VIS (Serial Number) Rules: ONLY FOR EXACTLY 17-CHAR VINS
-                // We no longer forcefully mutate P to 0, S to 5, etc. here.
-                // The candidate scoring engine and confusion matrix handles this gracefully.
-                
-                corrected = new string(chars);
-            }
-
-            if (_ocrCorrections == null || !_ocrCorrections.Any())
-            {
-                // Fallback hardcoded replacements if appsettings is empty
-                corrected = corrected
-                    .Replace("GTAO", "GTA0")
-                    .Replace("O7", "07")
-                    .Replace("NESLDS", "NE5LD5")
-                    .Replace("NESLD5", "NE5LD5")
-                    .Replace("NE5LDS", "NE5LD5")
-                    .Replace("A23D", "A2S3D")
-                    .Replace("LBBTC", "LB8TC")
-                    .Replace("LBSTC", "LB8TC");
-            }
-            else
-            {
-                // Apply configured replacements (order matters, so appsettings should ideally preserve it or use longer keys first)
-                // We order by descending length to replace longer blocks first
-                foreach (var kvp in _ocrCorrections.OrderByDescending(x => x.Key.Length))
-                {
-                    corrected = corrected.Replace(kvp.Key, kvp.Value);
-                }
-            }
-            
-            return corrected;
-        }
 
         private void ExtractCandidatesFromPass(string rawText, List<DetectedText> detectedTexts, List<VinCandidate> allCandidates, string passName)
         {
@@ -497,7 +447,6 @@ namespace VehicleVisionOCR.OCR.Tesseract
                 foreach (Match match in barcodeRegex.Matches(spacelessLine))
                 {
                     string val = match.Value;
-                    val = ApplyOcrCorrections(val);
                     allCandidates.Add(new VinCandidate { Text = val, OriginalText = line, Source = "SpacelessLine", PassName = passName });
                 }
 
@@ -505,7 +454,6 @@ namespace VehicleVisionOCR.OCR.Tesseract
                 foreach (Match match in barcodeRegex.Matches(cleanLine))
                 {
                     string val = match.Value.Replace(" ", "");
-                    val = ApplyOcrCorrections(val);
                     allCandidates.Add(new VinCandidate { Text = val, OriginalText = val, Source = "CleanLine", PassName = passName });
                 }
 
@@ -514,8 +462,6 @@ namespace VehicleVisionOCR.OCR.Tesseract
                 foreach (var word in words)
                 {
                     var squishedWord = Regex.Replace(word, @"[^A-Z0-9]+", "");
-                    squishedWord = ApplyOcrCorrections(squishedWord);
-                    
                     foreach (Match match in exactVinRegex.Matches(squishedWord))
                     {
                         string val = match.Groups[1].Value;
@@ -553,8 +499,6 @@ namespace VehicleVisionOCR.OCR.Tesseract
                     var orderedWords = group.OrderBy(w => w.X).ToList();
                     var lineText = string.Join(" ", orderedWords.Select(w => w.Text));
                     var strippedLine = Regex.Replace(lineText.ToUpperInvariant(), @"[^A-Z0-9]+", "");
-                    strippedLine = ApplyOcrCorrections(strippedLine);
-                    
                     // Strip trailing barcode hallucination characters (often appended to the actual VIN)
                     strippedLine = Regex.Replace(strippedLine, @"[ILMNUVW\|]+$", "");
 
@@ -684,23 +628,7 @@ namespace VehicleVisionOCR.OCR.Tesseract
             {
                 var extractedColor = colorMatch.Value.ToUpperInvariant().Trim();
                 
-                // The user WANTS the color code (e.g. NHB05, PB396) included in the final string!
-                // Fix common OCR confusions in the color codes instead of stripping them.
-                
-                // Fix NHB05 (often read as NHBOS or NHB0S)
-                extractedColor = Regex.Replace(extractedColor, @"\bNHB[O0][S5]\b", "NHB05");
-                
-                // Fix PB396 (often read as BB396 or PP396 or P8396)
-                extractedColor = Regex.Replace(extractedColor, @"\b[BP]{2}396\b", "PB396");
-                extractedColor = Regex.Replace(extractedColor, @"\bP[8B]396\b", "PB396");
-                extractedColor = Regex.Replace(extractedColor, @"\bPB[3S]96\b", "PB396");
 
-                // Fix generic O/0 and S/5 issues in color codes (first word before the actual color)
-                // E.g. NH830M -> NH83OM, NHB05 -> NHBOS
-                
-                extractedColor = Regex.Replace(extractedColor, @"^[A-Z]?\s*EARL", "PEARL");
-                extractedColor = Regex.Replace(extractedColor, @"O[YV]\s*I[YV]", "PEARL IGNEOUS");
-                
                 fields.Add(new OcrField { Key = "Color", Value = extractedColor, Confidence = new OcrConfidence { Percentage = 80.0 } });
             }
 

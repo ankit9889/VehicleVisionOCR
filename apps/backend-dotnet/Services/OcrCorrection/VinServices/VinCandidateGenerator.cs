@@ -33,26 +33,34 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
             _options = options.Value;
         }
 
-        private static readonly Dictionary<char, char[]> ConfusionMatrix = new Dictionary<char, char[]>
+        private static readonly Dictionary<string, string[]> ConfusionMatrix = new Dictionary<string, string[]>
         {
-            {'0', new[] {'O', 'D', 'Q'}},
-            {'O', new[] {'0', 'D', 'Q'}},
-            {'1', new[] {'I', 'l', 'T', '7'}},
-            {'I', new[] {'1', 'l', 'T'}},
-            {'5', new[] {'S'}},
-            {'S', new[] {'5'}},
-            {'8', new[] {'B'}},
-            {'B', new[] {'8'}},
-            {'6', new[] {'G'}},
-            {'G', new[] {'6'}},
-            {'2', new[] {'Z'}},
-            {'Z', new[] {'2'}},
-            {'7', new[] {'T', '1'}},
-            {'T', new[] {'7', '1'}},
-            {'D', new[] {'0', 'O'}},
-            {'Q', new[] {'0', 'O'}},
-            {'A', new[] {'4'}},
-            {'4', new[] {'A'}}
+            {"0", new[] {"O", "D", "Q"}},
+            {"O", new[] {"0", "D", "Q", "C"}},
+            {"1", new[] {"I", "L", "7"}},
+            {"I", new[] {"1", "L", "7"}},
+            {"L", new[] {"1", "I"}},
+            {"5", new[] {"S", "6"}},
+            {"S", new[] {"5"}},
+            {"8", new[] {"B", "3"}},
+            {"B", new[] {"8"}},
+            {"3", new[] {"8"}},
+            {"6", new[] {"G", "5"}},
+            {"G", new[] {"6", "C"}},
+            {"2", new[] {"Z", "7"}},
+            {"Z", new[] {"2"}},
+            {"7", new[] {"T", "1", "I", "2"}},
+            {"T", new[] {"7", "1"}},
+            {"D", new[] {"0", "O"}},
+            {"Q", new[] {"0", "O"}},
+            {"A", new[] {"4"}},
+            {"4", new[] {"A"}},
+            {"C", new[] {"G", "O"}},
+            {"M", new[] {"N", "RN"}},
+            {"N", new[] {"M"}},
+            {"RN", new[] {"M"}},
+            {"VV", new[] {"W"}},
+            {"W", new[] {"VV"}}
         };
 
         /// <inheritdoc/>
@@ -61,27 +69,21 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
             var candidates = new List<CandidateScore>();
             if (string.IsNullOrEmpty(normalizedBase)) return candidates;
 
-            char[] current = new char[normalizedBase.Length];
-            GenerateCombinations(normalizedBase, 0, current, 0, candidates);
-
-            // WMI Fuzzy matching is still valuable. If we have prefix matches, we could add them,
-            // but the confusion matrix already handles character replacement cleanly and globally.
-            // We return the combinatorial candidates here. Scoring will handle WMI validation.
-            
+            GenerateCombinations(normalizedBase, 0, "", 0, candidates);
             return candidates;
         }
 
-        private void GenerateCombinations(string original, int index, char[] current, int substitutions, List<CandidateScore> results)
+        private void GenerateCombinations(string original, int index, string current, int substitutions, List<CandidateScore> results)
         {
             // Limit combinatorial explosion
             if (substitutions > 4) return;
             if (results.Count >= 2000) return;
 
-            if (index == original.Length)
+            if (index >= original.Length)
             {
                 results.Add(new CandidateScore 
                 { 
-                    Candidate = new string(current),
+                    Candidate = current,
                     Rules = substitutions > 0 ? new List<string> { $"Confusion Matrix ({substitutions} changes)" } : new List<string>(),
                     Substitutions = substitutions
                 });
@@ -89,16 +91,29 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
             }
 
             // Path 1: Keep original character
-            current[index] = original[index];
-            GenerateCombinations(original, index + 1, current, substitutions, results);
+            GenerateCombinations(original, index + 1, current + original[index], substitutions, results);
 
             // Path 2: Use alternatives from confusion matrix
-            if (ConfusionMatrix.TryGetValue(char.ToUpperInvariant(original[index]), out var alternatives))
+            // Check single character
+            string singleChar = original.Substring(index, 1);
+            if (ConfusionMatrix.TryGetValue(singleChar.ToUpperInvariant(), out var alternatives1))
             {
-                foreach (var alt in alternatives)
+                foreach (var alt in alternatives1)
                 {
-                    current[index] = alt;
-                    GenerateCombinations(original, index + 1, current, substitutions + 1, results);
+                    GenerateCombinations(original, index + 1, current + alt, substitutions + 1, results);
+                }
+            }
+
+            // Check two-character sequence
+            if (index < original.Length - 1)
+            {
+                string twoChars = original.Substring(index, 2);
+                if (ConfusionMatrix.TryGetValue(twoChars.ToUpperInvariant(), out var alternatives2))
+                {
+                    foreach (var alt in alternatives2)
+                    {
+                        GenerateCombinations(original, index + 2, current + alt, substitutions + 1, results);
+                    }
                 }
             }
         }

@@ -17,6 +17,9 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection
         /// </summary>
         public double MinVinScoreThreshold { get; set; } = 60.0;
 
+        public int MinVinLength { get; set; } = 14;
+        public int MaxVinLength { get; set; } = 20;
+
         /// <summary>
         /// The absolute minimum composite score a Color candidate must achieve to be marked as IsValid = true.
         /// Default is 65.0.

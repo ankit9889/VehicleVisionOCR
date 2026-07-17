@@ -23,8 +23,8 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Strategies
             {'0', 'O'}, {'1', 'I'}, {'5', 'S'}, {'8', 'B'}, {'2', 'Z'}
         };
 
-        [GeneratedRegex(@"[^A-Z0-9\s]")]
-        private static partial Regex NonAlphaNumericRegex();
+        [GeneratedRegex(@"\s+")]
+        private static partial Regex WhitespaceRegex();
 
         public TargetFieldType FieldType => TargetFieldType.Color;
 
@@ -106,7 +106,7 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Strategies
         private string Normalize(string text, List<string> rules)
         {
             string norm = text.Trim().ToUpperInvariant();
-            norm = NonAlphaNumericRegex().Replace(norm, ""); 
+            norm = WhitespaceRegex().Replace(norm, " "); // Collapse multiple spaces
 
             char[] chars = norm.ToCharArray();
             bool appliedConfusion = false;
@@ -141,21 +141,20 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Strategies
             }
 
             string bestFuzzy = null;
-            int bestDistance = int.MaxValue;
+            double bestScore = 0.0;
             foreach (var dbColor in activeColors)
             {
-                int distance = FuzzyMatcher.ComputeLevenshteinDistance(normalizedText, dbColor);
-                if (distance < bestDistance)
+                double similarity = FuzzyMatcher.ComputeJaroWinkler(normalizedText, dbColor);
+                if (similarity > bestScore)
                 {
-                    bestDistance = distance;
+                    bestScore = similarity;
                     bestFuzzy = dbColor;
                 }
             }
 
-            if (bestFuzzy != null && bestDistance <= Math.Max(2, bestFuzzy.Length / 4))
+            if (bestFuzzy != null && bestScore >= 0.85) // 85% JaroWinkler similarity threshold
             {
-                double score = 100.0 - ((double)bestDistance / bestFuzzy.Length * 100.0);
-                return (bestFuzzy, score, "Levenshtein Fuzzy Match");
+                return (bestFuzzy, bestScore * 100.0, "Jaro-Winkler Similarity Match");
             }
 
             return (null, 0, "None");

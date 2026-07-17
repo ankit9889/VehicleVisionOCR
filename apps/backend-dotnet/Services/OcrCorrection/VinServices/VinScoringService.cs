@@ -11,6 +11,13 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
     /// </summary>
     public partial class VinScoringService : IVinScoringService
     {
+        private readonly OcrCorrectionOptions _options;
+
+        public VinScoringService(Microsoft.Extensions.Options.IOptions<OcrCorrectionOptions> options)
+        {
+            _options = options?.Value ?? new OcrCorrectionOptions();
+        }
+
         [GeneratedRegex("^[A-HJ-NPR-Z0-9]{17}$")]
         private static partial Regex VinPatternRegex();
 
@@ -28,7 +35,8 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.VinServices
             score -= (candidateObj.Substitutions * 2.0);
 
             // 2. Exact Pattern Match (Weight: 30%)
-            if (Regex.IsMatch(candidate, "^[A-HJ-NPR-Z0-9]{14,25}$"))
+            string pattern = $"^[A-HJ-NPR-Z0-9]{{{_options.MinVinLength},{_options.MaxVinLength}}}$";
+            if (Regex.IsMatch(candidate, pattern))
             {
                 score += 30.0;
             }

@@ -112,10 +112,10 @@ namespace VehicleVisionOCR.Backend.Services.OcrCorrection.Strategies
                 ConfidenceLevel = DetermineConfidenceLevel(best.Score)
             };
 
-            if (best.Candidate.Length < 14 || best.Candidate.Length > 25)
+            if (best.Candidate.Length < _options.MinVinLength || best.Candidate.Length > _options.MaxVinLength)
             {
                 result.IsValid = false;
-                result.FailureReason = $"Invalid length ({best.Candidate.Length} chars). Expected 14 to 25.";
+                result.FailureReason = $"Invalid length ({best.Candidate.Length} chars). Expected {_options.MinVinLength} to {_options.MaxVinLength}.";
                 return result;
             }
 

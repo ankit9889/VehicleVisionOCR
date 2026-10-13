@@ -33,7 +33,7 @@
   "author": "Your Company",
   "license": "ISC",
   "devDependencies": {
-    "concurrently": "^10.0.3",
+    "concurrently": "^10.0.6",
     "electron": "^43.1.0",
     "electron-builder": "^26.15.3",
     "wait-on": "^9.0.10"
